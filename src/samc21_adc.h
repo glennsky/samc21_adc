@@ -26,7 +26,7 @@ public:
     * @return void
     */
     SAMC21_ADC(Adc *Conv);
-    uint8_t begin();
+    uint8_t begin(void);
 
 private:
     Adc* _adc;

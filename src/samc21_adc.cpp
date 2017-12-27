@@ -9,9 +9,6 @@
 #include "samc21_adc.h"
 #include "Arduino.h"
 
-SAMC21_ADC *use_object;
-
-
 /**
 * @brief Checks for the presence of a connector id
 *
@@ -24,20 +21,35 @@ SAMC21_ADC::SAMC21_ADC(Adc* Conv)
 {
 };
 
-uint8_t SAMC21_ADC::begin(uint8_t idmodeset, uint32_t speedset, uint8_t clockset)
+uint8_t SAMC21_ADC::begin(void)
 {
     
-    
+    return 0;
 };
+/**
+ * The handler for ADC0
+ * 
+ * @return void
+ */
 void ADC0_Handler(void)
 {
 }
 
 
+/**
+ * The handler for ADC1
+ * 
+ * @return void
+ */
 void ADC1_Handler(void)
 {
 }
 
-void ADC2_Handler(void)
+/**
+ * The handler for SDADC
+ * 
+ * @return void
+ */
+void SDADC_Handler(void)
 {
 }
