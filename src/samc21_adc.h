@@ -47,6 +47,37 @@ enum samc21_adc_avg_divisor
     SAMC21_ADC_AVGDIV_128 = ADC_AVGCTRL_ADJRES(7),
 };
 
+enum samc21_adc_mux_pos
+{
+    SAMC21_ADC_MUXPOS_0       = 0x00,
+    SAMC21_ADC_MUXPOS_1       = 0x01,
+    SAMC21_ADC_MUXPOS_2       = 0x02,
+    SAMC21_ADC_MUXPOS_3       = 0x03,
+    SAMC21_ADC_MUXPOS_4       = 0x04,
+    SAMC21_ADC_MUXPOS_5       = 0x05,
+    SAMC21_ADC_MUXPOS_6       = 0x06,
+    SAMC21_ADC_MUXPOS_7       = 0x07,
+    SAMC21_ADC_MUXPOS_8       = 0x08,
+    SAMC21_ADC_MUXPOS_9       = 0x09,
+    SAMC21_ADC_MUXPOS_10      = 0x0A,
+    SAMC21_ADC_MUXPOS_11      = 0x0B,
+    SAMC21_ADC_MUXPOS_BANDGAP = 0x19,
+    SAMC21_ADC_MUXPOS_DAC     = 0x1C,
+};
+
+
+enum samc21_adc_mux_neg
+{
+    SAMC21_ADC_MUXNEG_0   = 0x00,
+    SAMC21_ADC_MUXNEG_1   = 0x01,
+    SAMC21_ADC_MUXNEG_2   = 0x02,
+    SAMC21_ADC_MUXNEG_3   = 0x03,
+    SAMC21_ADC_MUXNEG_4   = 0x04,
+    SAMC21_ADC_MUXNEG_5   = 0x05,
+    SAMC21_ADC_MUXNEG_GND = 0x18,
+};
+
+
 class SAMC21_ADC
 {
 
@@ -85,6 +116,15 @@ public:
     */
     void average(samc21_adc_avg_samples samples = SAMC21_ADC_AVGSAMPLES_1, samc21_adc_avg_divisor div = SAMC21_ADC_AVGDIV_1);
 
+    /**
+    * @brief Sets the mux and sets up the pin
+    * 
+    * @param pos The positive pin
+    * @param neg The negative pin
+    *
+    * @return void
+    */
+    void mux(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
 
 private:
     Adc* _adc;
