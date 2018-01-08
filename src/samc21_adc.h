@@ -77,7 +77,6 @@ enum samc21_adc_mux_neg
     SAMC21_ADC_MUXNEG_GND = 0x18,
 };
 
-
 class SAMC21_ADC
 {
 
@@ -136,11 +135,55 @@ public:
     */
     int32_t read(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
 
+    /**
+    * @brief Adds a reading.
+    * 
+    * @warning Do not use this outside of this class.  It is for the interrupts to set the
+    *          current value.
+    * 
+    * @param value The current value of the ADC from the interrupt
+    *
+    * @return void
+    */
+    void value(int32_t val);
+
+    /**
+    * @brief Gets the current reading
+    * 
+    * @warning Do not use this outside of this class.  It is for the interrupts to set the
+    *          current value.
+    * 
+    * @return The current reading
+    */
+    int32_t value(void);
+
+    
 private:
     Adc* _adc;
     
     void _sync(void);
+    volatile bool _new;    //!< Flag to say we have a new reading
+    volatile int32_t _val; //!< The value of the last ADC read
 
+    void _enable_irq() {
+        IRQn_Type irq = ADC0_IRQn;
+        if (_adc != NULL) {
+            if (_adc == ADC0) {
+                irq = ADC0_IRQn;
+            } else if (_adc == ADC1) {
+                irq = ADC1_IRQn;
+            }
+            NVIC_DisableIRQ(irq);
+            NVIC_ClearPendingIRQ(irq);
+            NVIC_SetPriority(irq, 1);
+            NVIC_EnableIRQ(irq);
+
+            _sync();
+            _adc->INTENSET.reg = ADC_INTENSET_RESRDY;
+        }
+    };
+    
+    
 };
 
 
