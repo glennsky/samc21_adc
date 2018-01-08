@@ -126,6 +126,16 @@ public:
     */
     void mux(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
 
+    /**
+    * @brief Blocking read of the pin
+    * 
+    * @param pos The positive pin
+    * @param neg The negative pin
+    *
+    * @return void
+    */
+    int32_t read(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
+
 private:
     Adc* _adc;
     

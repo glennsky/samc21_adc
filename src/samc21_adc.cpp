@@ -132,7 +132,33 @@ void SAMC21_ADC::mux(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
         PORT->Group[ngroup].PMUX[npin / 2].reg = mux;
     }
 }
+int32_t SAMC21_ADC::read(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
+{
+    int32_t valueRead;
+    
+    mux(pos, neg);
+    _adc->CTRLA.bit.ENABLE = 0x01;             // Enable ADC
 
+    _sync();
+    _adc->SWTRIG.bit.START = 1;
+
+    // Clear the Data Ready flag
+    _adc->INTFLAG.reg = ADC_INTFLAG_RESRDY;
+
+    // Start conversion again, since The first conversion after the reference is changed must not be used.
+    _sync();
+    _adc->SWTRIG.bit.START = 1;
+
+    // Store the value
+    while (_adc->INTFLAG.bit.RESRDY == 0);   // Waiting for conversion to complete
+    valueRead = _adc->RESULT.reg;
+
+    _sync();
+    _adc->CTRLA.bit.ENABLE = 0x00;             // Disable ADC
+    _sync();
+
+    return valueRead;
+}
 
 /**
  * This synchronizes the clocks.
