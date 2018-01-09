@@ -1,7 +1,7 @@
 /**
  * @file
  * @author     Scott Price <prices@hugllc.com>
- * @copyright  © 2017 Hunt Utilities Group, LLC
+ * @copyright  © 2018 Hunt Utilities Group, LLC
  * @brief      The main class for HUGnetCANLib.
  * @details
  */
@@ -32,23 +32,26 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
     
     if (_adc != NULL) {
 
-        _sync();
-        _adc->CTRLA.bit.SWRST;
-
         if (_adc == ADC0) {
+            if (samc21_adc_obj[0] != NULL) {
+                return 2;
+            }
             MCLK->APBCMASK.reg |= MCLK_APBCMASK_ADC0;
             biasrefbuf = (*((uint32_t *) ADC0_FUSES_BIASREFBUF_ADDR) & ADC0_FUSES_BIASREFBUF_Msk) >> ADC0_FUSES_BIASREFBUF_Pos;
             biascomp   = (*((uint32_t *) ADC0_FUSES_BIASCOMP_ADDR) & ADC0_FUSES_BIASCOMP_Msk) >> ADC0_FUSES_BIASCOMP_Pos;
             samc21_adc_obj[0] = this;
         } else if (_adc == ADC1) {
+            if (samc21_adc_obj[1] != NULL) {
+                return 2;
+            }
             MCLK->APBCMASK.reg |= MCLK_APBCMASK_ADC1;
             biasrefbuf = (*((uint32_t *) ADC1_FUSES_BIASREFBUF_ADDR) & ADC1_FUSES_BIASREFBUF_Msk) >> ADC1_FUSES_BIASREFBUF_Pos;
             biascomp   = (*((uint32_t *) ADC1_FUSES_BIASCOMP_ADDR) & ADC1_FUSES_BIASCOMP_Msk) >> ADC1_FUSES_BIASCOMP_Pos;
             samc21_adc_obj[1] = this;
         }
-        
         _sync();
-        _adc->CTRLA.bit.ENABLE = 1;             // Enable ADC
+        _adc->CTRLA.bit.SWRST;
+        
         _sync();
         _adc->CALIB.reg = ADC_CALIB_BIASREFBUF(biasrefbuf) | ADC_CALIB_BIASCOMP(biascomp);
 
@@ -61,6 +64,9 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
         mux();
         average();
         ref(vref);
+
+        _sync();
+        _adc->CTRLA.bit.ENABLE = 1;             // Enable ADC
 
         _enable_irq();
         
@@ -175,15 +181,15 @@ int32_t SAMC21_ADC::read(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
     return INT32_MIN;
 }
 
-void SAMC21_ADC::value(int32_t val)
-{
-    _val = val;
-    _new = true;
-}
-
 int32_t SAMC21_ADC::value(void)
 {
     _new = false;
+    if (_adc != NULL) {
+        if (_adc->INTFLAG.bit.RESRDY) {
+            _val = _adc->RESULT.reg;
+            _new = true;
+        }
+    }
     return _val;
 }
 
@@ -205,8 +211,8 @@ void SAMC21_ADC::_sync(void)
  */
 void ADC0_Handler(void)
 {
-    if ((samc21_adc_obj[0] != NULL) && ADC0->INTFLAG.bit.RESRDY) {
-        samc21_adc_obj[0]->value((int32_t)ADC0->RESULT.reg);
+    if (samc21_adc_obj[0] != NULL) {
+        samc21_adc_obj[0]->value();
     }
     ADC0->INTFLAG.reg = ADC0->INTFLAG.reg;
 }
@@ -219,8 +225,8 @@ void ADC0_Handler(void)
  */
 void ADC1_Handler(void)
 {
-    if ((samc21_adc_obj[1] != NULL) && ADC1->INTFLAG.bit.RESRDY) {
-        samc21_adc_obj[1]->value((int32_t)ADC1->RESULT.reg);
+    if (samc21_adc_obj[1] != NULL) {
+        samc21_adc_obj[1]->value();
     }
     ADC1->INTFLAG.reg = ADC1->INTFLAG.reg;
 }

@@ -136,18 +136,6 @@ public:
     int32_t read(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
 
     /**
-    * @brief Adds a reading.
-    * 
-    * @warning Do not use this outside of this class.  It is for the interrupts to set the
-    *          current value.
-    * 
-    * @param value The current value of the ADC from the interrupt
-    *
-    * @return void
-    */
-    void value(int32_t val);
-
-    /**
     * @brief Gets the current reading
     * 
     * @warning Do not use this outside of this class.  It is for the interrupts to set the
