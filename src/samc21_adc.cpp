@@ -184,10 +184,11 @@ int32_t SAMC21_ADC::read(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
 int32_t SAMC21_ADC::value(void)
 {
     _new = false;
-    if (_adc != NULL) {
+    if (_adc != NULL) {  // Check to see if there is something newer.
         if (_adc->INTFLAG.bit.RESRDY) {
             _val = _adc->RESULT.reg;
             _new = true;
+            _adc->INTFLAG.bit.RESRDY = 1;   // Clear the flag
         }
     }
     return _val;
