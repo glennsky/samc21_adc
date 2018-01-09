@@ -9,9 +9,12 @@
 #define _SAMC_ADC_H_
 
 #include "sam.h"
+#include "Arduino.h"
 
 #include <inttypes.h>
 #include <string.h>
+
+typedef void (*samc21_adc_callback)(int32_t);
 
 enum samc21_adc_ref
 {
@@ -138,20 +141,32 @@ public:
     /**
     * @brief Gets the current reading
     * 
-    * @warning Do not use this outside of this class.  It is for the interrupts to set the
-    *          current value.
-    * 
     * @return The current reading
     */
     int32_t value(void);
 
+    /**
+    * @brief Sets the callback function
+    * 
+    * @param cb The callback function
+    * 
+    * @return The current reading
+    */
+    void callback(samc21_adc_callback cb)
+    {
+        _callback = cb;
+        _enable_irq();
+    }
+    
     
 private:
-    Adc* _adc;
-    
-    void _sync(void);
+    Adc* _adc;             //!< ADC Pointer
     volatile bool _new;    //!< Flag to say we have a new reading
     volatile int32_t _val; //!< The value of the last ADC read
+    samc21_adc_callback _callback; //!< The callback function
+
+    void _sync_adc(void);
+
 
     void _enable_irq() {
         IRQn_Type irq = ADC0_IRQn;
@@ -166,11 +181,19 @@ private:
             NVIC_SetPriority(irq, 1);
             NVIC_EnableIRQ(irq);
 
-            _sync();
+            _sync_adc();
             _adc->INTENSET.reg = ADC_INTENSET_RESRDY;
         }
     };
     
+    bool _wait(uint32_t timeout = 100)
+    {
+        unsigned long late = millis() + timeout;
+        do {
+            value();
+        } while (!_new and (millis() < late));
+        return _new;
+    }
     
 };
 
