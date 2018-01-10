@@ -134,9 +134,19 @@ public:
     * @param pos The positive pin
     * @param neg The negative pin
     *
-    * @return void
+    * @return the read
     */
     int32_t read(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
+
+    /**
+    * @brief Starts continuous reading
+    * 
+    * @param pos The positive pin
+    * @param neg The negative pin
+    *
+    * @return void
+    */
+    void freerun(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
 
     /**
     * @brief Gets the current reading
@@ -172,12 +182,17 @@ public:
         return false;
     };
     
+    uint32_t count(void)
+    {
+        return _count;
+    };
+    
 private:
-    Adc* _adc;             //!< ADC Pointer
-    volatile uint32_t _count;    //!< Flag to say we have a new reading
-    volatile int32_t _val; //!< The value of the last ADC read
+    Adc* _adc;                     //!< ADC Pointer
+    volatile uint32_t _count;      //!< Flag to say we have a new reading
+    volatile int32_t _val;         //!< The value of the last ADC read
     samc21_adc_callback _callback; //!< The callback function
-    uint32_t _new;         //!< This is a container for the new function
+    uint32_t _new;                 //!< This is a container for the new function
 
     /**
     * This synchronizes the clocks.

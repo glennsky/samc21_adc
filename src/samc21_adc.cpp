@@ -175,6 +175,21 @@ int32_t SAMC21_ADC::read(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
     }
     return val;
 }
+void SAMC21_ADC::freerun(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
+{
+    if (_adc != NULL) {
+        mux(pos, neg);
+
+        _enable_irq();
+        
+        _sync_adc();
+        _adc->CTRLC.bit.FREERUN = 1;
+        
+        _sync_adc();
+        _adc->SWTRIG.bit.START = 1;
+
+    }
+}
 
 int32_t SAMC21_ADC::value(void)
 {
