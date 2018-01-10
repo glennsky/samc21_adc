@@ -190,7 +190,10 @@ private:
     {
         unsigned long late = millis() + timeout;
         do {
-            value();
+            // Only retrieve the value if the interrupt is not enabled.
+            if (_adc->INTENSET.bit.RESRDY == 0) {
+                value();
+            }
         } while (!_new and (millis() < late));
         return _new;
     }
