@@ -21,7 +21,7 @@ const uint8_t ADC1_pins[]  = {0, 1, 2, 3, 8, 9, 4, 5, 6, 7, 8, 9};
 const uint8_t ADC1_group[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0};
 
 SAMC21_ADC::SAMC21_ADC(Adc* Conv)
-: _adc(Conv), _new(false), _val(INT32_MIN), _callback(NULL)
+: _adc(Conv), _count(0), _val(INT32_MIN), _callback(NULL), _new(0)
 {
 };
 
@@ -178,17 +178,7 @@ int32_t SAMC21_ADC::read(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
 
 int32_t SAMC21_ADC::value(void)
 {
-    _new = false;
-    if (_adc != NULL) {  // Check to see if there is something newer.
-        if (_adc->INTFLAG.bit.RESRDY) {
-            _val = _adc->RESULT.reg;
-            _new = true;
-            _adc->INTFLAG.bit.RESRDY = 1;   // Clear the flag
-            if (_callback != NULL) {
-                _callback(_val);
-            }
-        }
-    }
+    _checkNew();
     return _val;
 }
 

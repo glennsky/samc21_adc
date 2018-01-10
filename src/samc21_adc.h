@@ -156,14 +156,28 @@ public:
     {
         _callback = cb;
         _enable_irq();
-    }
+    };
     
+    /**
+    * @brief Returns true if there has been a reading since the last time it was called
+    * 
+    * @return True if there is a reading since the last call
+    */
+    bool newReading(void)
+    {
+        if (_new != _count) {
+            _new = _count;
+            return true;
+        }
+        return false;
+    };
     
 private:
     Adc* _adc;             //!< ADC Pointer
-    volatile bool _new;    //!< Flag to say we have a new reading
+    volatile uint32_t _count;    //!< Flag to say we have a new reading
     volatile int32_t _val; //!< The value of the last ADC read
     samc21_adc_callback _callback; //!< The callback function
+    uint32_t _new;         //!< This is a container for the new function
 
     void _sync_adc(void);
 
@@ -189,15 +203,32 @@ private:
     bool _wait(uint32_t timeout = 100)
     {
         unsigned long late = millis() + timeout;
+        bool newRead = false;
         do {
             // Only retrieve the value if the interrupt is not enabled.
             if (_adc->INTENSET.bit.RESRDY == 0) {
                 value();
             }
-        } while (!_new and (millis() < late));
-        return _new;
+            newRead = newReading();
+        } while (!newRead and (millis() < late));
+        return newRead;
     }
     
+    bool _checkNew(void)
+    {
+        if (_adc != NULL) {  // Check to see if there is something newer.
+            if (_adc->INTFLAG.bit.RESRDY) {
+                _val = _adc->RESULT.reg;
+                _count++;
+                _adc->INTFLAG.bit.RESRDY = 1;   // Clear the flag
+                if (_callback != NULL) {
+                    _callback(_val);
+                }
+                return true;
+            }
+        }
+        return false;
+    }
 };
 
 
