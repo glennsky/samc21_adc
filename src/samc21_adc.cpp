@@ -182,17 +182,6 @@ int32_t SAMC21_ADC::value(void)
     return _val;
 }
 
-
-/**
- * This synchronizes the clocks.
- * 
- * @return void
- */
-void SAMC21_ADC::_sync_adc(void)
-{
-    while ( _adc->SYNCBUSY.reg & ADC_SYNCBUSY_MASK );
-}
-
 /**
  * The handler for ADC0
  * 

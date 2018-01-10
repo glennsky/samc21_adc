@@ -179,10 +179,23 @@ private:
     samc21_adc_callback _callback; //!< The callback function
     uint32_t _new;         //!< This is a container for the new function
 
-    void _sync_adc(void);
+    /**
+    * This synchronizes the clocks.
+    * 
+    * @return void
+    */
+    void _sync_adc(void)
+    {
+        while ( _adc->SYNCBUSY.reg & ADC_SYNCBUSY_MASK );
+    }
 
 
-    void _enable_irq() {
+    /**
+     * @brief Enables the interrupts
+     * 
+     * @return void
+     */
+    void _enable_irq(void) {
         IRQn_Type irq = ADC0_IRQn;
         if (_adc != NULL) {
             if (_adc == ADC0) {
@@ -200,6 +213,13 @@ private:
         }
     };
     
+    /**
+     * @brief Wait for a new reading
+     * 
+     * @param timeout The timeout in ms
+     * 
+     * @return true if there is a new reading
+     */
     bool _wait(uint32_t timeout = 100)
     {
         unsigned long late = millis() + timeout;
@@ -214,6 +234,11 @@ private:
         return newRead;
     }
     
+    /**
+     * @brief Checks for a new reading and loads it
+     * 
+     * @return true if there is a new reading
+     */
     bool _checkNew(void)
     {
         if (_adc != NULL) {  // Check to see if there is something newer.
