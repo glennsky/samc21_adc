@@ -115,6 +115,11 @@ void SAMC21_ADC::mux(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
                 npin   = ADC0_pins[neg];
                 ngroup = ADC0_group[neg];
             }
+            if (neg == SAMC21_ADC_MUXNEG_GND) {
+                _adc->CTRLC.bit.DIFFMODE = 0;
+            } else {
+                _adc->CTRLC.bit.DIFFMODE = 1;
+            }
         } else if (_adc == ADC1) {
             if (pos < sizeof(ADC1_pins)) {
                 ppin   = ADC1_pins[pos];
