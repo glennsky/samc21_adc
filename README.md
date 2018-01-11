@@ -80,11 +80,6 @@ void loop()
 ```
 
 
-License
------------------
-GPL V3
-
-
 Acknowledgements
 -----------------
 Little bits of code (generally single lines) here and there were copied from the Arduino core.
