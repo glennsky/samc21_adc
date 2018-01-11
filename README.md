@@ -50,8 +50,7 @@ lib_deps = https://github.com/hugllc/samc21_adc.git
 
 #### Code ####
 
-Then for the code
-
+This will print out new readings very fast:
 
 ```cpp
 #include <samc21_adc.h>
