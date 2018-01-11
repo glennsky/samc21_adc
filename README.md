@@ -56,8 +56,6 @@ Then for the code
 ```cpp
 #include <samc21_adc.h>
 
-SAMC21_CAN can(0);
-
 SAMC21_ADC adc(ADC0);
 
 void setup()
