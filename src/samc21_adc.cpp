@@ -80,6 +80,7 @@ void SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor 
     if (_adc != NULL) {
         _sync_adc();
         _adc->AVGCTRL.reg = samples | div;
+        _adc->CTRLC.bit.RESSEL = 1; // 16 bit result
     }
 }
 

@@ -40,7 +40,7 @@ enum samc21_adc_avg_samples
 
 enum samc21_adc_avg_divisor
 {
-    SAMC21_ADC_AVGDIV_1   = ADC_AVGCTRL_ADJRES(0),
+    SAMC21_ADC_AVGDIV_0   = ADC_AVGCTRL_ADJRES(0),
     SAMC21_ADC_AVGDIV_2   = ADC_AVGCTRL_ADJRES(1),
     SAMC21_ADC_AVGDIV_4   = ADC_AVGCTRL_ADJRES(2),
     SAMC21_ADC_AVGDIV_8   = ADC_AVGCTRL_ADJRES(3),
@@ -110,13 +110,15 @@ public:
     void ref(samc21_adc_ref vref);
     /**
     * @brief Sets the averager
+    *
+    * 
     * 
     * @param samples The number of samples.
-    * @param div     The divisor.
+    * @param div     This is EXTRA right shift that will happen.
     *
     * @return void
     */
-    void average(samc21_adc_avg_samples samples = SAMC21_ADC_AVGSAMPLES_1, samc21_adc_avg_divisor div = SAMC21_ADC_AVGDIV_1);
+    void average(samc21_adc_avg_samples samples = SAMC21_ADC_AVGSAMPLES_1, samc21_adc_avg_divisor div = SAMC21_ADC_AVGDIV_0);
 
     /**
     * @brief Sets the mux and sets up the pin
