@@ -80,6 +80,15 @@ enum samc21_adc_mux_neg
     SAMC21_ADC_MUXNEG_GND = 0x18,
 };
 
+enum samc21_adc_win_mode
+{
+    SAMC21_ADC_WINMODE_DISABLE  = 0x00,
+    SAMC21_ADC_WINMODE_GT_LOWER = 0x01,
+    SAMC21_ADC_WINMODE_LT_UPPER = 0x02,
+    SAMC21_ADC_WINMODE_INSIDE   = 0x03,
+    SAMC21_ADC_WINMODE_OUTSIDE  = 0x04,
+};
+
 class SAMC21_ADC
 {
 
@@ -169,6 +178,52 @@ public:
         _callback = cb;
         _enable_irq();
     };
+
+    /**
+    * @brief Sets the callback function for the window for the function
+    * 
+    * @param cb    The callback function
+    * @param lower The lower limit
+    * @param upper The upper limit
+    * 
+    * @return void
+    */
+    void window(
+        samc21_adc_win_mode mode, 
+        samc21_adc_callback cb,
+        uint16_t lower = 0, 
+        uint16_t upper = UINT16_MAX)
+    {
+        if (mode == SAMC21_ADC_WINMODE_DISABLE) {
+            _sync_adc();
+            _adc->INTENCLR.reg = ADC_INTENSET_WINMON;
+            _sync_adc();
+            _adc->CTRLC.bit.WINMODE = mode;
+            _window = NULL;
+        } else if (cb != NULL) {
+            _window = cb;
+            _enable_irq();
+            _sync_adc();
+            _adc->WINLT.reg = (uint16_t)lower;
+            _sync_adc();
+            _adc->WINUT.reg = (uint16_t)upper;
+            _sync_adc();
+            _adc->CTRLC.bit.WINMODE = mode;
+            _sync_adc();
+            _adc->INTENSET.reg = ADC_INTENSET_WINMON;
+        }
+    };
+    /**
+    * @brief Calls the window function if there is one.
+    * 
+    * @return void
+    */
+    void window(void)
+    {
+        if (_window != NULL) {
+            _window(value());
+        }
+    }
     
     /**
     * @brief Returns true if there has been a reading since the last time it was called
@@ -184,18 +239,15 @@ public:
         return false;
     };
     
-    uint32_t count(void)
-    {
-        return _count;
-    };
-    
 private:
     Adc* _adc;                     //!< ADC Pointer
     volatile uint32_t _count;      //!< Flag to say we have a new reading
     volatile int32_t _val;         //!< The value of the last ADC read
     samc21_adc_callback _callback; //!< The callback function
+    samc21_adc_callback _window;   //!< The callback function for the windowing
     uint32_t _new;                 //!< This is a container for the new function
-
+    bool _int;                     //!< 1 if we are in interrupt mode
+    
     /**
     * This synchronizes the clocks.
     * 
@@ -215,18 +267,21 @@ private:
     void _enable_irq(void) {
         IRQn_Type irq = ADC0_IRQn;
         if (_adc != NULL) {
-            if (_adc == ADC0) {
-                irq = ADC0_IRQn;
-            } else if (_adc == ADC1) {
-                irq = ADC1_IRQn;
-            }
-            NVIC_DisableIRQ(irq);
-            NVIC_ClearPendingIRQ(irq);
-            NVIC_SetPriority(irq, 1);
-            NVIC_EnableIRQ(irq);
+            if (_int == 0) {
+                _int = 1;
+                if (_adc == ADC0) {
+                    irq = ADC0_IRQn;
+                } else if (_adc == ADC1) {
+                    irq = ADC1_IRQn;
+                }
+                NVIC_DisableIRQ(irq);
+                NVIC_ClearPendingIRQ(irq);
+                NVIC_SetPriority(irq, 1);
+                NVIC_EnableIRQ(irq);
 
-            _sync_adc();
-            _adc->INTENSET.reg = ADC_INTENSET_RESRDY;
+                _sync_adc();
+                _adc->INTENSET.reg = ADC_INTENSET_RESRDY;
+            }
         }
     };
     

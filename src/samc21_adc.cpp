@@ -21,7 +21,7 @@ const uint8_t ADC1_pins[]  = {0, 1, 2, 3, 8, 9, 4, 5, 6, 7, 8, 9};
 const uint8_t ADC1_group[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0};
 
 SAMC21_ADC::SAMC21_ADC(Adc* Conv)
-: _adc(Conv), _count(0), _val(INT32_MIN), _callback(NULL), _new(0)
+: _adc(Conv), _count(0), _val(INT32_MIN), _callback(NULL), _window(NULL), _new(0), _int(0)
 {
 };
 
@@ -210,10 +210,15 @@ int32_t SAMC21_ADC::value(void)
  */
 void ADC0_Handler(void)
 {
+    uint8_t flags = ADC0->INTFLAG.reg;
     if (samc21_adc_obj[0] != NULL) {
-        samc21_adc_obj[0]->value();
+        if ((flags & ADC_INTFLAG_RESRDY) == ADC_INTFLAG_RESRDY) {
+            samc21_adc_obj[0]->value();
+        } 
+        if ((flags & ADC_INTFLAG_WINMON) == ADC_INTFLAG_WINMON) {
+            samc21_adc_obj[0]->window();
+        }
     }
-    ADC0->INTFLAG.reg = ADC0->INTFLAG.reg;
 }
 
 
@@ -224,10 +229,15 @@ void ADC0_Handler(void)
  */
 void ADC1_Handler(void)
 {
+    uint8_t flags = ADC1->INTFLAG.reg;
     if (samc21_adc_obj[1] != NULL) {
-        samc21_adc_obj[1]->value();
+        if ((flags & ADC_INTFLAG_RESRDY) == ADC_INTFLAG_RESRDY) {
+            samc21_adc_obj[1]->value();
+        } 
+        if ((flags & ADC_INTFLAG_WINMON) == ADC_INTFLAG_WINMON) {
+           samc21_adc_obj[1]->window();
+        }
     }
-    ADC1->INTFLAG.reg = ADC1->INTFLAG.reg;
 }
 
 /**
