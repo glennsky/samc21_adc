@@ -77,135 +77,147 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
 
 uint8_t SAMC21_ADC::end(void)
 {
-    if ((_adc != NULL) && _started()) {
-        _disable_irq();
-        _sync_adc();
-        _adc->CTRLA.bit.SWRST;
-        _sync_adc();
-        return 1;
+    if (_started()) {
+        if (_adc != NULL) {
+            _disable_irq();
+            _sync_adc();
+            _adc->CTRLA.bit.SWRST;
+            _sync_adc();
+            return 1;
+        }
     }
     return 0;
 }
 
 void SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor div)
 {
-    if (_adc != NULL) {
-        _sync_adc();
-        _adc->AVGCTRL.reg = samples | div;
-        _adc->CTRLC.bit.RESSEL = 1; // 16 bit result
+    if (_started()) {
+        if (_adc != NULL) {
+            _sync_adc();
+            _adc->AVGCTRL.reg = samples | div;
+            _adc->CTRLC.bit.RESSEL = 1; // 16 bit result
+        }
     }
 }
 
 void SAMC21_ADC::ref(samc21_adc_ref vref)
 {
-    if (_adc != NULL) {
-        _sync_adc();
-        switch (vref) {
-            case 0:
-            case 2:
-            case 3:
-                SUPC->VREF.reg &= ~SUPC_VREF_SEL_Msk;
-                SUPC->VREF.reg |= SUPC_VREF_SEL(vref);
-                _adc->REFCTRL.reg &= ~ADC_REFCTRL_REFSEL_Msk;
+    if (_started()) {
+        if (_adc != NULL) {
+            _sync_adc();
+            switch (vref) {
+                case 0:
+                case 2:
+                case 3:
+                    SUPC->VREF.reg &= ~SUPC_VREF_SEL_Msk;
+                    SUPC->VREF.reg |= SUPC_VREF_SEL(vref);
+                    _adc->REFCTRL.reg &= ~ADC_REFCTRL_REFSEL_Msk;
+            }
         }
     }
 };
 void SAMC21_ADC::mux(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
 {
-    if (_adc != NULL) {
-        _sync_adc();
-        _adc->INPUTCTRL.bit.MUXPOS = pos;
-        _adc->INPUTCTRL.bit.MUXNEG = neg;
-        uint8_t pgroup = 0xFF, ngroup = 0xFF;
-        uint8_t ppin = 0xFF, npin = 0xFF;
-        uint8_t mux;
-        if (_adc == ADC0) {
-            if (pos < sizeof(ADC0_pins)) {
-                ppin   = ADC0_pins[pos];
-                pgroup = ADC0_group[pos];
+    if (_started()) {
+        if (_adc != NULL) {
+            _sync_adc();
+            _adc->INPUTCTRL.bit.MUXPOS = pos;
+            _adc->INPUTCTRL.bit.MUXNEG = neg;
+            uint8_t pgroup = 0xFF, ngroup = 0xFF;
+            uint8_t ppin = 0xFF, npin = 0xFF;
+            uint8_t mux;
+            if (_adc == ADC0) {
+                if (pos < sizeof(ADC0_pins)) {
+                    ppin   = ADC0_pins[pos];
+                    pgroup = ADC0_group[pos];
+                }
+                if (neg < sizeof(ADC0_pins)) {
+                    npin   = ADC0_pins[neg];
+                    ngroup = ADC0_group[neg];
+                }
+                if (neg == SAMC21_ADC_MUXNEG_GND) {
+                    _adc->CTRLC.bit.DIFFMODE = 0;
+                } else {
+                    _adc->CTRLC.bit.DIFFMODE = 1;
+                }
+            } else if (_adc == ADC1) {
+                if (pos < sizeof(ADC1_pins)) {
+                    ppin   = ADC1_pins[pos];
+                    pgroup = ADC1_group[pos];
+                }
+                if (neg < sizeof(ADC1_pins)) {
+                    npin   = ADC1_pins[neg];
+                    ngroup = ADC1_group[neg];
+                }
             }
-            if (neg < sizeof(ADC0_pins)) {
-                npin   = ADC0_pins[neg];
-                ngroup = ADC0_group[neg];
+            if (ppin != 0xFF) {
+                PORT->Group[pgroup].DIRCLR.reg = 1<<ppin;
+                PORT->Group[pgroup].PINCFG[ppin].reg = PORT_PINCFG_INEN | PORT_PINCFG_PMUXEN;
+                mux = PORT->Group[pgroup].PMUX[ppin / 2].reg;
+                if (ppin%2 == 0) {
+                    // Even pin 
+                    mux &= PORT_PMUX_PMUXO(0xF);
+                } else {
+                    // Odd pin
+                    mux &= PORT_PMUX_PMUXE(0xF);
+                }
+                PORT->Group[pgroup].PMUX[ppin / 2].reg = mux;
             }
-            if (neg == SAMC21_ADC_MUXNEG_GND) {
-                _adc->CTRLC.bit.DIFFMODE = 0;
-            } else {
-                _adc->CTRLC.bit.DIFFMODE = 1;
+            if (npin != 0xFF) {
+                PORT->Group[ngroup].DIRCLR.reg = 1<<npin;
+                PORT->Group[ngroup].PINCFG[npin].reg = PORT_PINCFG_INEN | PORT_PINCFG_PMUXEN;
+                mux = PORT->Group[ngroup].PMUX[npin / 2].reg;
+                if (npin%2 == 0) {
+                    // Even pin AND off the even part (mux setting 0)
+                    mux &= ~PORT_PMUX_PMUXE(0xF);
+                } else {
+                    // Odd pin AND off the odd part (mux setting 0)
+                    mux &= ~PORT_PMUX_PMUXO(0xF);
+                }
+                PORT->Group[ngroup].PMUX[npin / 2].reg = mux;
             }
-        } else if (_adc == ADC1) {
-            if (pos < sizeof(ADC1_pins)) {
-                ppin   = ADC1_pins[pos];
-                pgroup = ADC1_group[pos];
-            }
-            if (neg < sizeof(ADC1_pins)) {
-                npin   = ADC1_pins[neg];
-                ngroup = ADC1_group[neg];
-            }
-        }
-        if (ppin != 0xFF) {
-            PORT->Group[pgroup].DIRCLR.reg = 1<<ppin;
-            PORT->Group[pgroup].PINCFG[ppin].reg = PORT_PINCFG_INEN | PORT_PINCFG_PMUXEN;
-            mux = PORT->Group[pgroup].PMUX[ppin / 2].reg;
-            if (ppin%2 == 0) {
-                // Even pin 
-                mux &= PORT_PMUX_PMUXO(0xF);
-            } else {
-                // Odd pin
-                mux &= PORT_PMUX_PMUXE(0xF);
-            }
-            PORT->Group[pgroup].PMUX[ppin / 2].reg = mux;
-        }
-        if (npin != 0xFF) {
-            PORT->Group[ngroup].DIRCLR.reg = 1<<npin;
-            PORT->Group[ngroup].PINCFG[npin].reg = PORT_PINCFG_INEN | PORT_PINCFG_PMUXEN;
-            mux = PORT->Group[ngroup].PMUX[npin / 2].reg;
-            if (npin%2 == 0) {
-                // Even pin AND off the even part (mux setting 0)
-                mux &= ~PORT_PMUX_PMUXE(0xF);
-            } else {
-                // Odd pin AND off the odd part (mux setting 0)
-                mux &= ~PORT_PMUX_PMUXO(0xF);
-            }
-            PORT->Group[ngroup].PMUX[npin / 2].reg = mux;
         }
     }
 }
 int32_t SAMC21_ADC::read(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
 {
     int32_t val = INT32_MIN;
-    if (_adc != NULL) {
-        mux(pos, neg);
+    if (_started()) {
+        if (_adc != NULL) {
+            mux(pos, neg);
 
-        _sync_adc();
-        _adc->SWTRIG.bit.START = 1;
+            _sync_adc();
+            _adc->SWTRIG.bit.START = 1;
 
-        // Clear the Data Ready flag
-        _adc->INTFLAG.reg = ADC_INTFLAG_RESRDY;
+            // Clear the Data Ready flag
+            _adc->INTFLAG.reg = ADC_INTFLAG_RESRDY;
 
-        // Start conversion again, since The first conversion after the reference is changed must not be used.
-        _sync_adc();
-        _adc->SWTRIG.bit.START = 1;
+            // Start conversion again, since The first conversion after the reference is changed must not be used.
+            _sync_adc();
+            _adc->SWTRIG.bit.START = 1;
 
-        if (_wait()) {
-            val = value();
+            if (_wait()) {
+                val = value();
+            }
         }
     }
     return val;
 }
 void SAMC21_ADC::freerun(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
 {
-    if (_adc != NULL) {
-        mux(pos, neg);
+    if (_started()) {
+        if (_adc != NULL) {
+            mux(pos, neg);
 
-        _enable_irq();
-        
-        _sync_adc();
-        _adc->CTRLC.bit.FREERUN = 1;
-        
-        _sync_adc();
-        _adc->SWTRIG.bit.START = 1;
+            _enable_irq();
+            
+            _sync_adc();
+            _adc->CTRLC.bit.FREERUN = 1;
+            
+            _sync_adc();
+            _adc->SWTRIG.bit.START = 1;
 
+        }
     }
 }
 

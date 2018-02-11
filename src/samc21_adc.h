@@ -276,21 +276,23 @@ private:
      */
     void _enable_irq(void) {
         IRQn_Type irq = ADC0_IRQn;
-        if (_adc != NULL) {
-            if (_int == 0) {
-                _int = 1;
-                if (_adc == ADC0) {
-                    irq = ADC0_IRQn;
-                } else if (_adc == ADC1) {
-                    irq = ADC1_IRQn;
-                }
-                NVIC_DisableIRQ(irq);
-                NVIC_ClearPendingIRQ(irq);
-                NVIC_SetPriority(irq, 1);
-                NVIC_EnableIRQ(irq);
+        if (_started()) {
+            if (_adc != NULL) {
+                if (_int == 0) {
+                    _int = 1;
+                    if (_adc == ADC0) {
+                        irq = ADC0_IRQn;
+                    } else if (_adc == ADC1) {
+                        irq = ADC1_IRQn;
+                    }
+                    NVIC_DisableIRQ(irq);
+                    NVIC_ClearPendingIRQ(irq);
+                    NVIC_SetPriority(irq, 1);
+                    NVIC_EnableIRQ(irq);
 
-                _sync_adc();
-                _adc->INTENSET.reg = ADC_INTENSET_RESRDY;
+                    _sync_adc();
+                    _adc->INTENSET.reg = ADC_INTENSET_RESRDY;
+                }
             }
         }
     };
@@ -328,13 +330,17 @@ private:
     {
         unsigned long late = millis() + timeout;
         bool newRead = false;
-        do {
-            // Only retrieve the value if the interrupt is not enabled.
-            if (_adc->INTENSET.bit.RESRDY == 0) {
-                value();
+        if (_started()) {
+            if (_adc != NULL) {
+                do {
+                    // Only retrieve the value if the interrupt is not enabled.
+                    if (_adc->INTENSET.bit.RESRDY == 0) {
+                        value();
+                    }
+                    newRead = newReading();
+                } while (!newRead and (millis() < late));
             }
-            newRead = newReading();
-        } while (!newRead and (millis() < late));
+        }
         return newRead;
     }
     
@@ -345,15 +351,17 @@ private:
      */
     bool _checkNew(void)
     {
-        if (_adc != NULL) {  // Check to see if there is something newer.
-            if (_adc->INTFLAG.bit.RESRDY) {
-                _val = _adc->RESULT.reg;
-                _count++;
-                _adc->INTFLAG.bit.RESRDY = 1;   // Clear the flag
-                if (_callback != NULL) {
-                    _callback(_val);
+        if (_started()) {
+            if (_adc != NULL) {  // Check to see if there is something newer.
+                if (_adc->INTFLAG.bit.RESRDY) {
+                    _val = _adc->RESULT.reg;
+                    _count++;
+                    _adc->INTFLAG.bit.RESRDY = 1;   // Clear the flag
+                    if (_callback != NULL) {
+                        _callback(_val);
+                    }
+                    return true;
                 }
-                return true;
             }
         }
         return false;
