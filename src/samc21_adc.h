@@ -104,11 +104,17 @@ public:
     /**
     * @brief Sets up the ADC
     * 
-    * @param *Conv The ADC pointer to use.  Should be ADC0 or ADC1.
+    * @param vref The voltage reference to use
     *
     * @return void
     */
     uint8_t begin(samc21_adc_ref vref = SAMC21_ADC_REF_1024);
+    /**
+     * @brief Stops the ADC
+     * 
+     * @return void
+     */
+    uint8_t end(void);
     /**
     * @brief Sets the reference
     * 
@@ -281,6 +287,29 @@ private:
 
                 _sync_adc();
                 _adc->INTENSET.reg = ADC_INTENSET_RESRDY;
+            }
+        }
+    };
+    /**
+     * @brief Enables the interrupts
+     * 
+     * @return void
+     */
+    void _disable_irq(void) {
+        IRQn_Type irq = ADC0_IRQn;
+        if (_adc != NULL) {
+            if (_int == 1) {
+                _int = 0;
+                if (_adc == ADC0) {
+                    irq = ADC0_IRQn;
+                } else if (_adc == ADC1) {
+                    irq = ADC1_IRQn;
+                }
+                _adc->INTENCLR.reg = ADC_INTENSET_RESRDY;
+                NVIC_DisableIRQ(irq);
+                NVIC_ClearPendingIRQ(irq);
+                NVIC_SetPriority(irq, 1);
+                _sync_adc();
             }
         }
     };

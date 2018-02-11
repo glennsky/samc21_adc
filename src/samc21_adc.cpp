@@ -30,7 +30,7 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
     uint32_t biasrefbuf = 0;
     uint32_t biascomp = 0;
     
-    if (_adc != NULL) {
+    if ((_adc != NULL) && (_adc->CTRLA.bit.ENABLE == 0)) {
 
         if (_adc == ADC0) {
             if (samc21_adc_obj[0] != NULL) {
@@ -74,6 +74,16 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
 
     return 0;
 };
+
+uint8_t SAMC21_ADC::end(void)
+{
+    if ((_adc != NULL) && (_adc->CTRLA.bit.ENABLE == 1)) {
+        _disable_irq();
+        _sync_adc();
+        _adc->CTRLA.bit.SWRST;
+        _sync_adc();
+    }
+}
 
 void SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor div)
 {
