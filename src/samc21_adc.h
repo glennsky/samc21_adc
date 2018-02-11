@@ -312,7 +312,6 @@ private:
                 _adc->INTENCLR.reg = ADC_INTENSET_RESRDY;
                 NVIC_DisableIRQ(irq);
                 NVIC_ClearPendingIRQ(irq);
-                NVIC_SetPriority(irq, 1);
                 _sync_adc();
             }
         }
