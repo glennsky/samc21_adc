@@ -82,9 +82,9 @@ uint8_t SAMC21_ADC::end(void)
         _sync_adc();
         _adc->CTRLA.bit.SWRST;
         _sync_adc();
-        return 1
+        return 1;
     }
-    return 0
+    return 0;
 }
 
 void SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor div)
