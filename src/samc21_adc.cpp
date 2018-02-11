@@ -77,12 +77,14 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
 
 uint8_t SAMC21_ADC::end(void)
 {
-    if ((_adc != NULL) && (_adc->CTRLA.bit.ENABLE == 1)) {
+    if ((_adc != NULL) && _started()) {
         _disable_irq();
         _sync_adc();
         _adc->CTRLA.bit.SWRST;
         _sync_adc();
+        return 1
     }
+    return 0
 }
 
 void SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor div)

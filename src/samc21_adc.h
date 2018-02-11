@@ -181,8 +181,10 @@ public:
     */
     void callback(samc21_adc_callback cb)
     {
-        _callback = cb;
-        _enable_irq();
+        if (_adc != NULL) {
+            _callback = cb;
+            _enable_irq();
+        }
     };
 
     /**
@@ -200,23 +202,25 @@ public:
         uint16_t lower = 0, 
         uint16_t upper = UINT16_MAX)
     {
-        if (mode == SAMC21_ADC_WINMODE_DISABLE) {
-            _sync_adc();
-            _adc->INTENCLR.reg = ADC_INTENSET_WINMON;
-            _sync_adc();
-            _adc->CTRLC.bit.WINMODE = mode;
-            _window = NULL;
-        } else if (cb != NULL) {
-            _window = cb;
-            _enable_irq();
-            _sync_adc();
-            _adc->WINLT.reg = (uint16_t)lower;
-            _sync_adc();
-            _adc->WINUT.reg = (uint16_t)upper;
-            _sync_adc();
-            _adc->CTRLC.bit.WINMODE = mode;
-            _sync_adc();
-            _adc->INTENSET.reg = ADC_INTENSET_WINMON;
+        if (_adc != NULL) {
+            if (mode == SAMC21_ADC_WINMODE_DISABLE) {
+                _sync_adc();
+                _adc->INTENCLR.reg = ADC_INTENSET_WINMON;
+                _sync_adc();
+                _adc->CTRLC.bit.WINMODE = mode;
+                _window = NULL;
+            } else if (cb != NULL) {
+                _window = cb;
+                _enable_irq();
+                _sync_adc();
+                _adc->WINLT.reg = (uint16_t)lower;
+                _sync_adc();
+                _adc->WINUT.reg = (uint16_t)upper;
+                _sync_adc();
+                _adc->CTRLC.bit.WINMODE = mode;
+                _sync_adc();
+                _adc->INTENSET.reg = ADC_INTENSET_WINMON;
+            }
         }
     };
     /**
@@ -355,6 +359,19 @@ private:
         }
         return false;
     }
+    /**
+     * @brief Checks if we have started the ADC
+     * 
+     * @return true if it has started.
+     */
+    bool _started(void)
+    {
+        if (_adc != NULL) {
+            return (_adc->CTRLA.bit.ENABLE == 1);
+        }
+        return false;
+    }
+    
 };
 
 
