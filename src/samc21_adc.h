@@ -14,7 +14,9 @@
 #include <inttypes.h>
 #include <string.h>
 
-typedef void (*samc21_adc_callback)(int32_t);
+class SAMC21_ADC;
+
+typedef void (*samc21_adc_callback)(SAMC21_ADC *, int32_t, void *);
 
 enum samc21_adc_ref
 {
@@ -175,14 +177,16 @@ public:
     /**
     * @brief Sets the callback function
     * 
-    * @param cb The callback function
+    * @param cb   The callback function
+    * @param *ptr An extra pointer that will be the third argument to the callback function
     * 
     * @return The current reading
     */
-    void callback(samc21_adc_callback cb)
+    void callback(samc21_adc_callback cb, void *ptr = NULL)
     {
         if (_adc != NULL) {
             _callback = cb;
+            _callback_ptr = ptr;
             _enable_irq();
         }
     };
@@ -200,7 +204,9 @@ public:
         samc21_adc_win_mode mode, 
         samc21_adc_callback cb,
         uint16_t lower = 0, 
-        uint16_t upper = UINT16_MAX)
+        uint16_t upper = UINT16_MAX,
+        void *ptr = NULL
+               )
     {
         if (_adc != NULL) {
             if (mode == SAMC21_ADC_WINMODE_DISABLE) {
@@ -211,6 +217,7 @@ public:
                 _window = NULL;
             } else if (cb != NULL) {
                 _window = cb;
+                _window_ptr = ptr;
                 _enable_irq();
                 _sync_adc();
                 _adc->WINLT.reg = (uint16_t)lower;
@@ -231,7 +238,7 @@ public:
     void window(void)
     {
         if (_window != NULL) {
-            _window(value());
+            _window(this, value(), _window_ptr);
         }
     }
     
@@ -257,7 +264,8 @@ private:
     samc21_adc_callback _window;   //!< The callback function for the windowing
     uint32_t _new;                 //!< This is a container for the new function
     bool _int;                     //!< 1 if we are in interrupt mode
-    
+    void * _callback_ptr;          //!< Extra pointer for _callback
+    void * _window_ptr;            //!< Extra pointer for _window
     /**
     * This synchronizes the clocks.
     * 
@@ -358,7 +366,7 @@ private:
                     _count++;
                     _adc->INTFLAG.bit.RESRDY = 1;   // Clear the flag
                     if (_callback != NULL) {
-                        _callback(_val);
+                        _callback(this, _val, _callback_ptr);
                     }
                     return true;
                 }
