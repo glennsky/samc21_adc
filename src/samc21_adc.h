@@ -16,17 +16,15 @@
 
 class SAMC21_ADC;
 
-typedef void (*samc21_adc_callback)(SAMC21_ADC *, int32_t, void *);
+typedef void (*samc21_adc_callback)(SAMC21_ADC *, int32_t, uint8_t, void *);
 
-enum samc21_adc_ref
-{
+enum samc21_adc_ref {
     SAMC21_ADC_REF_1024 = 0,
     SAMC21_ADC_REF_2048 = 2,
     SAMC21_ADC_REF_4096 = 3,
 };
 
-enum samc21_adc_avg_samples
-{
+enum samc21_adc_avg_samples {
     SAMC21_ADC_AVGSAMPLES_1    = ADC_AVGCTRL_SAMPLENUM_1,
     SAMC21_ADC_AVGSAMPLES_2    = ADC_AVGCTRL_SAMPLENUM_2,
     SAMC21_ADC_AVGSAMPLES_4    = ADC_AVGCTRL_SAMPLENUM_4,
@@ -40,8 +38,7 @@ enum samc21_adc_avg_samples
     SAMC21_ADC_AVGSAMPLES_1024 = ADC_AVGCTRL_SAMPLENUM_1024,
 };
 
-enum samc21_adc_avg_divisor
-{
+enum samc21_adc_avg_divisor {
     SAMC21_ADC_AVGDIV_0   = ADC_AVGCTRL_ADJRES(0),
     SAMC21_ADC_AVGDIV_2   = ADC_AVGCTRL_ADJRES(1),
     SAMC21_ADC_AVGDIV_4   = ADC_AVGCTRL_ADJRES(2),
@@ -52,8 +49,7 @@ enum samc21_adc_avg_divisor
     SAMC21_ADC_AVGDIV_128 = ADC_AVGCTRL_ADJRES(7),
 };
 
-enum samc21_adc_mux_pos
-{
+enum samc21_adc_mux_pos {
     SAMC21_ADC_MUXPOS_0       = 0x00,
     SAMC21_ADC_MUXPOS_1       = 0x01,
     SAMC21_ADC_MUXPOS_2       = 0x02,
@@ -71,8 +67,7 @@ enum samc21_adc_mux_pos
 };
 
 
-enum samc21_adc_mux_neg
-{
+enum samc21_adc_mux_neg {
     SAMC21_ADC_MUXNEG_0   = 0x00,
     SAMC21_ADC_MUXNEG_1   = 0x01,
     SAMC21_ADC_MUXNEG_2   = 0x02,
@@ -82,8 +77,7 @@ enum samc21_adc_mux_neg
     SAMC21_ADC_MUXNEG_GND = 0x18,
 };
 
-enum samc21_adc_win_mode
-{
+enum samc21_adc_win_mode {
     SAMC21_ADC_WINMODE_DISABLE  = 0x00,
     SAMC21_ADC_WINMODE_GT_LOWER = 0x01,
     SAMC21_ADC_WINMODE_LT_UPPER = 0x02,
@@ -97,7 +91,7 @@ class SAMC21_ADC
 public:
     /**
     * @brief Creates the ADC object.
-    * 
+    *
     * @param *Conv The ADC pointer to use.  Should be ADC0 or ADC1.
     *
     * @return void
@@ -105,7 +99,7 @@ public:
     SAMC21_ADC(Adc *Conv);
     /**
     * @brief Sets up the ADC
-    * 
+    *
     * @param vref The voltage reference to use
     *
     * @return void
@@ -113,13 +107,13 @@ public:
     uint8_t begin(samc21_adc_ref vref = SAMC21_ADC_REF_1024);
     /**
      * @brief Stops the ADC
-     * 
+     *
      * @return void
      */
     uint8_t end(void);
     /**
     * @brief Sets the reference
-    * 
+    *
     * @param vref The reference to use.
     *
     * @return void
@@ -128,8 +122,8 @@ public:
     /**
     * @brief Sets the averager
     *
-    * 
-    * 
+    *
+    *
     * @param samples The number of samples.
     * @param div     This is EXTRA right shift that will happen.
     *
@@ -138,18 +132,27 @@ public:
     void average(samc21_adc_avg_samples samples = SAMC21_ADC_AVGSAMPLES_1, samc21_adc_avg_divisor div = SAMC21_ADC_AVGDIV_0);
 
     /**
-    * @brief Sets the mux and sets up the pin
-    * 
+    * @brief Sets the mux
+    *
     * @param pos The positive pin
     * @param neg The negative pin
     *
     * @return void
     */
     void mux(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
+    /**
+    * @brief Sets the input pins
+    *
+    * @param pos The positive pin
+    * @param neg The negative pin
+    *
+    * @return void
+    */
+    void pins(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
 
     /**
     * @brief Blocking read of the pin
-    * 
+    *
     * @param pos The positive pin
     * @param neg The negative pin
     *
@@ -159,7 +162,7 @@ public:
 
     /**
     * @brief Starts continuous reading
-    * 
+    *
     * @param pos The positive pin
     * @param neg The negative pin
     *
@@ -168,18 +171,42 @@ public:
     void freerun(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
 
     /**
+    * @brief Starts single read or sequence then returns
+    *
+    * @return void
+    */
+    void run(void);
+
+    /**
+    * @brief Says if the sequence is busy
+    *
+    * @return void
+    */
+    bool busy()
+    {
+        if (_adc != NULL) {
+            if (_adc->SEQCTRL.reg != 0) {
+                return _adc->SEQSTATUS.bit.SEQBUSY == 1;
+            } else {
+                
+            } 
+        }
+        return false;
+    }
+
+    /**
     * @brief Gets the current reading
-    * 
+    *
     * @return The current reading
     */
     int32_t value(void);
 
     /**
     * @brief Sets the callback function
-    * 
+    *
     * @param cb   The callback function
     * @param *ptr An extra pointer that will be the third argument to the callback function
-    * 
+    *
     * @return The current reading
     */
     void callback(samc21_adc_callback cb, void *ptr = NULL)
@@ -193,20 +220,20 @@ public:
 
     /**
     * @brief Sets the callback function for the window for the function
-    * 
+    *
     * @param cb    The callback function
     * @param lower The lower limit
     * @param upper The upper limit
-    * 
+    *
     * @return void
     */
     void window(
-        samc21_adc_win_mode mode, 
+        samc21_adc_win_mode mode,
         samc21_adc_callback cb,
-        uint16_t lower = 0, 
+        uint16_t lower = 0,
         uint16_t upper = UINT16_MAX,
         void *ptr = NULL
-               )
+    )
     {
         if (_adc != NULL) {
             if (mode == SAMC21_ADC_WINMODE_DISABLE) {
@@ -232,19 +259,66 @@ public:
     };
     /**
     * @brief Calls the window function if there is one.
-    * 
+    *
     * @return void
     */
     void window(void)
     {
         if (_window != NULL) {
-            _window(this, value(), _window_ptr);
+            _window(this, value(), (uint8_t)_adc->SEQSTATUS.bit.SEQBUSY, _window_ptr);
         }
     }
-    
+
+    /**
+    * @brief Enables a pin in the sequence
+    *
+    * @param pos The positive mux pin
+    * 
+    * @return void
+    */
+    void seqEnable(samc21_adc_mux_pos pos)
+    {
+        if (_started()) {
+            if (_adc != NULL) {
+                if (pos < 32) {
+                    _adc->SEQCTRL.reg |= 1<<pos;
+                    pins(pos);
+                }
+            }
+        }
+    }
+    /**
+    * @brief Disables a pin in the sequence
+    *
+    * @param pos The positive mux pin
+    * 
+    * @return void
+    */
+    void seqDisable(samc21_adc_mux_pos pos)
+    {
+        if (_started()) {
+            if (_adc != NULL) {
+                _adc->SEQCTRL.reg &= ~(1<<pos);
+            }
+        }
+    }
+    /**
+    * @brief Disables all pins in the sequence
+    *
+    * @return void
+    */
+    void seqDisable(void)
+    {
+        if (_started()) {
+            if (_adc != NULL) {
+                _adc->SEQCTRL.reg = 0;
+            }
+        }
+    }
+
     /**
     * @brief Returns true if there has been a reading since the last time it was called
-    * 
+    *
     * @return True if there is a reading since the last call
     */
     bool newReading(void)
@@ -255,34 +329,35 @@ public:
         }
         return false;
     };
-    
+
 private:
-    Adc* _adc;                     //!< ADC Pointer
+    Adc *_adc;                     //!< ADC Pointer
     volatile uint32_t _count;      //!< Flag to say we have a new reading
     volatile int32_t _val;         //!< The value of the last ADC read
     samc21_adc_callback _callback; //!< The callback function
     samc21_adc_callback _window;   //!< The callback function for the windowing
     uint32_t _new;                 //!< This is a container for the new function
     bool _int;                     //!< 1 if we are in interrupt mode
-    void * _callback_ptr;          //!< Extra pointer for _callback
-    void * _window_ptr;            //!< Extra pointer for _window
+    void *_callback_ptr;           //!< Extra pointer for _callback
+    void *_window_ptr;             //!< Extra pointer for _window
     /**
     * This synchronizes the clocks.
-    * 
+    *
     * @return void
     */
     void _sync_adc(void)
     {
-        while ( _adc->SYNCBUSY.reg & ADC_SYNCBUSY_MASK );
+        while (_adc->SYNCBUSY.reg & ADC_SYNCBUSY_MASK);
     }
 
 
     /**
      * @brief Enables the interrupts
-     * 
+     *
      * @return void
      */
-    void _enable_irq(void) {
+    void _enable_irq(void)
+    {
         IRQn_Type irq = ADC0_IRQn;
         if (_started()) {
             if (_adc != NULL) {
@@ -297,7 +372,6 @@ private:
                     NVIC_ClearPendingIRQ(irq);
                     NVIC_SetPriority(irq, 1);
                     NVIC_EnableIRQ(irq);
-
                     _sync_adc();
                     _adc->INTENSET.reg = ADC_INTENSET_RESRDY;
                 }
@@ -306,10 +380,11 @@ private:
     };
     /**
      * @brief Enables the interrupts
-     * 
+     *
      * @return void
      */
-    void _disable_irq(void) {
+    void _disable_irq(void)
+    {
         IRQn_Type irq = ADC0_IRQn;
         if (_adc != NULL) {
             if (_int == 1) {
@@ -326,12 +401,12 @@ private:
             }
         }
     };
-    
+
     /**
      * @brief Wait for a new reading
-     * 
+     *
      * @param timeout The timeout in ms
-     * 
+     *
      * @return true if there is a new reading
      */
     bool _wait(uint32_t timeout = 100)
@@ -351,10 +426,10 @@ private:
         }
         return newRead;
     }
-    
+
     /**
      * @brief Checks for a new reading and loads it
-     * 
+     *
      * @return true if there is a new reading
      */
     bool _checkNew(void)
@@ -366,7 +441,7 @@ private:
                     _count++;
                     _adc->INTFLAG.bit.RESRDY = 1;   // Clear the flag
                     if (_callback != NULL) {
-                        _callback(this, _val, _callback_ptr);
+                        _callback(this, _val, (uint8_t)_adc->SEQSTATUS.bit.SEQSTATE, _callback_ptr);
                     }
                     return true;
                 }
@@ -376,7 +451,7 @@ private:
     }
     /**
      * @brief Checks if we have started the ADC
-     * 
+     *
      * @return true if it has started.
      */
     bool _started(void)
@@ -386,7 +461,34 @@ private:
         }
         return false;
     }
-    
+    /**
+    * @brief Sets the mux and sets up the pin
+    *
+    * @param pos The positive pin
+    * @param neg The negative pin
+    *
+    * @return void
+    */
+    void _mux(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
+    {
+        if (_adc != NULL) {
+            _adc->INPUTCTRL.reg = ((uint16_t)pos << ADC_INPUTCTRL_MUXPOS_Pos) | ((uint16_t)neg << ADC_INPUTCTRL_MUXNEG_Pos);
+        }
+        
+    }
+    /**
+    * @brief Starts the ADC
+    *
+    * @return void
+    */
+    void _start(void)
+    {
+        if (_adc != NULL) {
+            _adc->SWTRIG.bit.START = 1;
+        }
+        
+    }
+
 };
 
 
