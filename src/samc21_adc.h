@@ -116,9 +116,9 @@ public:
     *
     * @param vref The reference to use.
     *
-    * @return void
+    * @return true on success
     */
-    void ref(samc21_adc_ref vref);
+    bool ref(samc21_adc_ref vref);
     /**
     * @brief Sets the averager
     *
@@ -127,9 +127,9 @@ public:
     * @param samples The number of samples.
     * @param div     This is EXTRA right shift that will happen.
     *
-    * @return void
+    * @return true on success
     */
-    void average(samc21_adc_avg_samples samples = SAMC21_ADC_AVGSAMPLES_1, samc21_adc_avg_divisor div = SAMC21_ADC_AVGDIV_0);
+    bool average(samc21_adc_avg_samples samples = SAMC21_ADC_AVGSAMPLES_1, samc21_adc_avg_divisor div = SAMC21_ADC_AVGDIV_0);
 
     /**
     * @brief Sets the mux
@@ -137,18 +137,18 @@ public:
     * @param pos The positive pin
     * @param neg The negative pin
     *
-    * @return void
+    * @return true on success
     */
-    void mux(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
+    bool mux(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
     /**
     * @brief Sets the input pins
     *
     * @param pos The positive pin
     * @param neg The negative pin
     *
-    * @return void
+    * @return true on success
     */
-    void pins(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
+    bool pins(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
 
     /**
     * @brief Blocking read of the pin
@@ -166,16 +166,16 @@ public:
     * @param pos The positive pin
     * @param neg The negative pin
     *
-    * @return void
+    * @return true on success
     */
-    void freerun(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
+    bool freerun(samc21_adc_mux_pos pos = SAMC21_ADC_MUXPOS_0, samc21_adc_mux_neg neg = SAMC21_ADC_MUXNEG_GND);
 
     /**
     * @brief Starts single read or sequence then returns
     *
-    * @return void
+    * @return true on success
     */
-    void run(void);
+    bool run(void);
 
     /**
     * @brief Says if the sequence is busy
@@ -489,11 +489,13 @@ private:
     *
     * @return void
     */
-    void _start(void)
+    bool _start(void)
     {
         if ((_adc != NULL) && !_sync()) {
             _adc->SWTRIG.bit.START = 1;
+            return true;
         }
+        return false;
         
     }
 

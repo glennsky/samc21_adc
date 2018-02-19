@@ -81,19 +81,22 @@ uint8_t SAMC21_ADC::end(void)
     return 0;
 }
 
-void SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor div)
+bool SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor div)
 {
     if (_started()) {
         if (_adc != NULL) {
             _sync_wait();
             _adc->AVGCTRL.reg = samples | div;
             _adc->CTRLC.bit.RESSEL = 1; // 16 bit result
+            return true;
         }
     }
+    return false;
 }
 
-void SAMC21_ADC::ref(samc21_adc_ref vref)
+bool SAMC21_ADC::ref(samc21_adc_ref vref)
 {
+    bool set = false;
     if (_started()) {
         if ((_adc != NULL) && !_sync()) {
             _disable();
@@ -104,23 +107,27 @@ void SAMC21_ADC::ref(samc21_adc_ref vref)
                     SUPC->VREF.reg &= ~SUPC_VREF_SEL_Msk;
                     SUPC->VREF.reg |= SUPC_VREF_SEL(vref);
                     _adc->REFCTRL.reg &= ~ADC_REFCTRL_REFSEL_Msk;
+                    set = true;
                     break;
             }
             _enable();
         }
     }
+    return set;
 };
-void SAMC21_ADC::mux(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
+bool SAMC21_ADC::mux(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
 {
     if (_started()) {
         if (_adc != NULL) {
             _sync_wait();
             _mux(pos, neg);
             pins(pos, neg);
+            return true;
         }
     }
+    return false;
 }
-void SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
+bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
 {
     if (_adc != NULL) {
         uint8_t pgroup = 0xFF, ngroup = 0xFF;
@@ -176,7 +183,9 @@ void SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             }
             PORT->Group[ngroup].PMUX[npin / 2].reg = mux;
         }
+        return true;
     }
+    return false;
 }
 
 int32_t SAMC21_ADC::read(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
@@ -199,7 +208,7 @@ int32_t SAMC21_ADC::read(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
     }
     return val;
 }
-void SAMC21_ADC::freerun(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
+bool SAMC21_ADC::freerun(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
 {
     if (_started()) {
         if (_adc != NULL) {
@@ -208,16 +217,18 @@ void SAMC21_ADC::freerun(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             _sync_wait();
             _adc->CTRLC.bit.FREERUN = 1;
             _sync_wait();
-            _start();
+            return _start();
         }
     }
+    return false;
 }
 
-void SAMC21_ADC::run(void)
+bool SAMC21_ADC::run(void)
 {
     if (_started()) {
-        _start();
+        return _start();
     }
+    return false;
 }
 
 int32_t SAMC21_ADC::value(void)
