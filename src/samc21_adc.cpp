@@ -21,7 +21,7 @@ const uint8_t ADC1_pins[]  = {0, 1, 2, 3, 8, 9, 4, 5, 6, 7, 8, 9};
 const uint8_t ADC1_group[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0};
 
 SAMC21_ADC::SAMC21_ADC(Adc *Conv)
-    : _adc(Conv), _count(0), _val(INT32_MIN), _callback(NULL), _window(NULL), _new(0), _int(0)
+    : _adc(Conv), _count(0), _val(INT32_MIN), _callback(NULL), _window(NULL), _new(0), _int(0), _begun(false)
 {
 };
 
@@ -47,19 +47,20 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
             biascomp   = (*((uint32_t *) ADC1_FUSES_BIASCOMP_ADDR) & ADC1_FUSES_BIASCOMP_Msk) >> ADC1_FUSES_BIASCOMP_Pos;
             samc21_adc_obj[1] = this;
         }
-        _sync_adc();
+        _sync_wait();
         _adc->CTRLA.bit.SWRST;
-        _sync_adc();
+        _sync_wait();
         _adc->CALIB.reg = ADC_CALIB_BIASREFBUF(biasrefbuf) | ADC_CALIB_BIASCOMP(biascomp);
         _adc->CTRLB.reg = ADC_CTRLB_PRESCALER_DIV256;
         _adc->CTRLC.reg = ADC_CTRLC_RESSEL_12BIT | ADC_CTRLC_R2R;
-        _sync_adc();
+        _sync_wait();
         _adc->SAMPCTRL.reg = (ADC_SAMPCTRL_SAMPLEN(0x0) | ADC_SAMPCTRL_OFFCOMP);
         mux();
         average();
         ref(vref);
-        _sync_adc();
-        _adc->CTRLA.bit.ENABLE = 1;             // Enable ADC
+        _sync_wait();
+        _enable();
+        _begun = true;
     } else {
         return 1;
     }
@@ -71,9 +72,9 @@ uint8_t SAMC21_ADC::end(void)
     if (_started()) {
         if (_adc != NULL) {
             _disable_irq();
-            _sync_adc();
+            _sync_wait();
             _adc->CTRLA.bit.SWRST;
-            _sync_adc();
+            _sync_wait();
             return 1;
         }
     }
@@ -84,7 +85,7 @@ void SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor 
 {
     if (_started()) {
         if (_adc != NULL) {
-            _sync_adc();
+            _sync_wait();
             _adc->AVGCTRL.reg = samples | div;
             _adc->CTRLC.bit.RESSEL = 1; // 16 bit result
         }
@@ -94,8 +95,8 @@ void SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor 
 void SAMC21_ADC::ref(samc21_adc_ref vref)
 {
     if (_started()) {
-        if (_adc != NULL) {
-            _sync_adc();
+        if ((_adc != NULL) && !_sync()) {
+            _disable();
             switch (vref) {
                 case 0:
                 case 2:
@@ -103,7 +104,9 @@ void SAMC21_ADC::ref(samc21_adc_ref vref)
                     SUPC->VREF.reg &= ~SUPC_VREF_SEL_Msk;
                     SUPC->VREF.reg |= SUPC_VREF_SEL(vref);
                     _adc->REFCTRL.reg &= ~ADC_REFCTRL_REFSEL_Msk;
+                    break;
             }
+            _enable();
         }
     }
 };
@@ -111,7 +114,7 @@ void SAMC21_ADC::mux(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
 {
     if (_started()) {
         if (_adc != NULL) {
-            _sync_adc();
+            _sync_wait();
             _mux(pos, neg);
             pins(pos, neg);
         }
@@ -187,7 +190,7 @@ int32_t SAMC21_ADC::read(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             // Clear the Data Ready flag
             _adc->INTFLAG.reg = ADC_INTFLAG_RESRDY;
             // Start conversion again, since The first conversion after the reference is changed must not be used.
-            _sync_adc();
+            _sync_wait();
             _adc->SWTRIG.bit.START = 1;
             if (_wait()) {
                 val = value();
@@ -202,9 +205,9 @@ void SAMC21_ADC::freerun(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
         if (_adc != NULL) {
             mux(pos, neg);
             _enable_irq();
-            _sync_adc();
+            _sync_wait();
             _adc->CTRLC.bit.FREERUN = 1;
-            _sync_adc();
+            _sync_wait();
             _start();
         }
     }

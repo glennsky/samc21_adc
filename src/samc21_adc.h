@@ -237,22 +237,22 @@ public:
     {
         if (_adc != NULL) {
             if (mode == SAMC21_ADC_WINMODE_DISABLE) {
-                _sync_adc();
+                _sync_wait();
                 _adc->INTENCLR.reg = ADC_INTENSET_WINMON;
-                _sync_adc();
+                _sync_wait();
                 _adc->CTRLC.bit.WINMODE = mode;
                 _window = NULL;
             } else if (cb != NULL) {
                 _window = cb;
                 _window_ptr = ptr;
                 _enable_irq();
-                _sync_adc();
+                _sync_wait();
                 _adc->WINLT.reg = (uint16_t)lower;
-                _sync_adc();
+                _sync_wait();
                 _adc->WINUT.reg = (uint16_t)upper;
-                _sync_adc();
+                _sync_wait();
                 _adc->CTRLC.bit.WINMODE = mode;
-                _sync_adc();
+                _sync_wait();
                 _adc->INTENSET.reg = ADC_INTENSET_WINMON;
             }
         }
@@ -340,14 +340,25 @@ private:
     bool _int;                     //!< 1 if we are in interrupt mode
     void *_callback_ptr;           //!< Extra pointer for _callback
     void *_window_ptr;             //!< Extra pointer for _window
+    bool _begun;
+    
+    /**
+    * This checks the clock sync
+    *
+    * @return void
+    */
+    bool _sync(uint16_t mask = ADC_SYNCBUSY_MASK)
+    {
+        return (_adc->SYNCBUSY.reg & mask) != 0;
+    }
     /**
     * This synchronizes the clocks.
     *
     * @return void
     */
-    void _sync_adc(void)
+    void _sync_wait(uint16_t mask = ADC_SYNCBUSY_MASK)
     {
-        while (_adc->SYNCBUSY.reg & ADC_SYNCBUSY_MASK);
+        while (_sync());
     }
 
 
@@ -372,7 +383,7 @@ private:
                     NVIC_ClearPendingIRQ(irq);
                     NVIC_SetPriority(irq, 1);
                     NVIC_EnableIRQ(irq);
-                    _sync_adc();
+                    _sync_wait();
                     _adc->INTENSET.reg = ADC_INTENSET_RESRDY;
                 }
             }
@@ -397,7 +408,7 @@ private:
                 _adc->INTENCLR.reg = ADC_INTENSET_RESRDY;
                 NVIC_DisableIRQ(irq);
                 NVIC_ClearPendingIRQ(irq);
-                _sync_adc();
+                _sync_wait();
             }
         }
     };
@@ -456,10 +467,7 @@ private:
      */
     bool _started(void)
     {
-        if (_adc != NULL) {
-            return (_adc->CTRLA.bit.ENABLE == 1);
-        }
-        return false;
+        return _begun;
     }
     /**
     * @brief Sets the mux and sets up the pin
@@ -483,12 +491,36 @@ private:
     */
     void _start(void)
     {
-        if (_adc != NULL) {
+        if ((_adc != NULL) && !_sync()) {
             _adc->SWTRIG.bit.START = 1;
         }
         
     }
 
+    /**
+    * @brief Starts the ADC
+    *
+    * @return void
+    */
+    void _enable(void)
+    {
+        _sync_wait(ADC_SYNCBUSY_ENABLE);
+        _adc->CTRLA.bit.ENABLE = 1;             // enable the ADC
+        _sync_wait(ADC_SYNCBUSY_ENABLE);
+    }
+    /**
+    * @brief Starts the ADC
+    *
+    * @return void
+    */
+    void _disable(void)
+    {
+        _sync_wait(ADC_SYNCBUSY_ENABLE);
+        _adc->CTRLA.bit.ENABLE = 0;             // enable the ADC
+        _sync_wait(ADC_SYNCBUSY_ENABLE);
+    }
+
+    
 };
 
 
