@@ -51,7 +51,7 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
         _adc->CTRLA.bit.SWRST;
         _sync_wait();
         _adc->CALIB.reg = ADC_CALIB_BIASREFBUF(biasrefbuf) | ADC_CALIB_BIASCOMP(biascomp);
-        _adc->CTRLB.reg = ADC_CTRLB_PRESCALER_DIV256;
+        _adc->CTRLB.reg = ADC_CTRLB_PRESCALER_DIV16;
         _adc->CTRLC.reg = ADC_CTRLC_RESSEL_12BIT | ADC_CTRLC_R2R;
         _sync_wait();
         _adc->SAMPCTRL.reg = (ADC_SAMPCTRL_SAMPLEN(0x0) | ADC_SAMPCTRL_OFFCOMP);
