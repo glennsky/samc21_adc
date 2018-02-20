@@ -14,14 +14,23 @@
 #include <inttypes.h>
 #include <string.h>
 
+#define REF_OFFSET 8
+#define SAMC21_ADC_MAX 4095
+#define SAMC21_ADC_AVG_MAX 65535
+
 class SAMC21_ADC;
 
 typedef void (*samc21_adc_callback)(SAMC21_ADC *, int32_t, uint8_t, void *);
 
 enum samc21_adc_ref {
-    SAMC21_ADC_REF_1024 = 0,
-    SAMC21_ADC_REF_2048 = 2,
-    SAMC21_ADC_REF_4096 = 3,
+    SAMC21_ADC_REF_INTVCC0 = 1,
+    SAMC21_ADC_REF_INTVCC1 = 2,
+    SAMC21_ADC_REF_VREFA   = 3,
+    SAMC21_ADC_REF_DAC     = 4,
+    SAMC21_ADC_REF_INTVCC2 = 5,
+    SAMC21_ADC_REF_1024    = (0 + REF_OFFSET),
+    SAMC21_ADC_REF_2048    = (2 + REF_OFFSET),
+    SAMC21_ADC_REF_4096    = (3 + REF_OFFSET),
 };
 
 enum samc21_adc_avg_samples {

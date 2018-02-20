@@ -101,13 +101,16 @@ bool SAMC21_ADC::ref(samc21_adc_ref vref)
         if ((_adc != NULL) && !_sync()) {
             _disable();
             switch (vref) {
-                case 0:
-                case 2:
-                case 3:
+                case SAMC21_ADC_REF_1024:
+                case SAMC21_ADC_REF_2048:
+                case SAMC21_ADC_REF_4096:
                     SUPC->VREF.reg &= ~SUPC_VREF_SEL_Msk;
-                    SUPC->VREF.reg |= SUPC_VREF_SEL(vref);
+                    SUPC->VREF.reg |= SUPC_VREF_SEL(vref - REF_OFFSET);
                     _adc->REFCTRL.reg &= ~ADC_REFCTRL_REFSEL_Msk;
                     set = true;
+                    break;
+                default:
+                    _adc->REFCTRL.bit.REFSEL = vref;
                     break;
             }
             _enable();
