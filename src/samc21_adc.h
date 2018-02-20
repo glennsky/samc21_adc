@@ -523,9 +523,6 @@ private:
                 // Can't enable ADC1 when ADC0 is disabled
                 return;
             }
-            Serial.print("Enabled ");
-            Serial.print((_adc == ADC0) ? " ADC0!" : " ADC1!");
-            Serial.println();
             _sync_wait(ADC_SYNCBUSY_ENABLE);
             _adc->CTRLA.bit.ENABLE = 1;             // enable the ADC
             _sync_wait(ADC_SYNCBUSY_ENABLE);
@@ -555,7 +552,6 @@ private:
                 // Can't disable ADC0 when ADC1 is enabled
                 return;
             }
-            Serial.println("HERE");
             _sync_wait(ADC_SYNCBUSY_ENABLE);
             _adc->CTRLA.bit.ENABLE = 0;             // enable the ADC
             _sync_wait(ADC_SYNCBUSY_ENABLE);

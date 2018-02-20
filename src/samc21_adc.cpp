@@ -107,10 +107,7 @@ bool SAMC21_ADC::ref(samc21_adc_ref vref)
                 set = true;
                 break;
             default:
-                Serial.print((_adc == ADC0) ? "ADC0 " : "ADC1 ");
-                Serial.print("Setting VREF to ");
                 _adc->REFCTRL.bit.REFSEL = vref;
-                Serial.println(_adc->REFCTRL.bit.REFSEL);
                 set = true;
                 break;
         }
