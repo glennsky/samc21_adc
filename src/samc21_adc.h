@@ -501,6 +501,9 @@ private:
     bool _start(void)
     {
         if ((_adc != NULL) && !_sync()) {
+            if (!_enabled()) {
+                _enable();
+            }
             _adc->SWTRIG.bit.START = 1;
             return true;
         }
@@ -515,9 +518,30 @@ private:
     */
     void _enable(void)
     {
-        _sync_wait(ADC_SYNCBUSY_ENABLE);
-        _adc->CTRLA.bit.ENABLE = 1;             // enable the ADC
-        _sync_wait(ADC_SYNCBUSY_ENABLE);
+        if (_adc != NULL) {
+            if ((_adc == ADC1) && (ADC0->CTRLA.bit.ENABLE == 0)) {
+                // Can't enable ADC1 when ADC0 is disabled
+                return;
+            }
+            Serial.print("Enabled ");
+            Serial.print((_adc == ADC0) ? " ADC0!" : " ADC1!");
+            Serial.println();
+            _sync_wait(ADC_SYNCBUSY_ENABLE);
+            _adc->CTRLA.bit.ENABLE = 1;             // enable the ADC
+            _sync_wait(ADC_SYNCBUSY_ENABLE);
+        }
+    }
+    /**
+    * @brief Starts the ADC
+    *
+    * @return void
+    */
+    bool _enabled(void)
+    {
+        if (_adc != NULL) {
+            return _adc->CTRLA.bit.ENABLE == 1;             // enable the ADC
+        }
+        return false;
     }
     /**
     * @brief Starts the ADC
@@ -526,9 +550,16 @@ private:
     */
     void _disable(void)
     {
-        _sync_wait(ADC_SYNCBUSY_ENABLE);
-        _adc->CTRLA.bit.ENABLE = 0;             // enable the ADC
-        _sync_wait(ADC_SYNCBUSY_ENABLE);
+        if (_adc != NULL) {
+            if ((_adc == ADC0) && (ADC1->CTRLA.bit.ENABLE == 1)) {
+                // Can't disable ADC0 when ADC1 is enabled
+                return;
+            }
+            Serial.println("HERE");
+            _sync_wait(ADC_SYNCBUSY_ENABLE);
+            _adc->CTRLA.bit.ENABLE = 0;             // enable the ADC
+            _sync_wait(ADC_SYNCBUSY_ENABLE);
+        }
     }
 
     

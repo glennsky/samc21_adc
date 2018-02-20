@@ -55,11 +55,10 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
         _adc->CTRLC.reg = ADC_CTRLC_RESSEL_12BIT | ADC_CTRLC_R2R;
         _sync_wait();
         _adc->SAMPCTRL.reg = (ADC_SAMPCTRL_SAMPLEN(0x0) | ADC_SAMPCTRL_OFFCOMP);
+        ref(vref);
         mux();
         average();
-        ref(vref);
         _sync_wait();
-        _enable();
         _begun = true;
     } else {
         return 1;
@@ -97,23 +96,23 @@ bool SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor 
 bool SAMC21_ADC::ref(samc21_adc_ref vref)
 {
     bool set = false;
-    if (_started()) {
-        if ((_adc != NULL) && !_sync()) {
-            _disable();
-            switch (vref) {
-                case SAMC21_ADC_REF_1024:
-                case SAMC21_ADC_REF_2048:
-                case SAMC21_ADC_REF_4096:
-                    SUPC->VREF.reg &= ~SUPC_VREF_SEL_Msk;
-                    SUPC->VREF.reg |= SUPC_VREF_SEL(vref - REF_OFFSET);
-                    _adc->REFCTRL.reg &= ~ADC_REFCTRL_REFSEL_Msk;
-                    set = true;
-                    break;
-                default:
-                    _adc->REFCTRL.bit.REFSEL = vref;
-                    break;
-            }
-            _enable();
+    if ((_adc != NULL) && !_enabled()) {
+        switch (vref) {
+            case SAMC21_ADC_REF_1024:
+            case SAMC21_ADC_REF_2048:
+            case SAMC21_ADC_REF_4096:
+                SUPC->VREF.reg &= ~SUPC_VREF_SEL_Msk;
+                SUPC->VREF.reg |= SUPC_VREF_SEL(vref - REF_OFFSET);
+                _adc->REFCTRL.reg &= ~ADC_REFCTRL_REFSEL_Msk;
+                set = true;
+                break;
+            default:
+                Serial.print((_adc == ADC0) ? "ADC0 " : "ADC1 ");
+                Serial.print("Setting VREF to ");
+                _adc->REFCTRL.bit.REFSEL = vref;
+                Serial.println(_adc->REFCTRL.bit.REFSEL);
+                set = true;
+                break;
         }
     }
     return set;
@@ -198,12 +197,12 @@ int32_t SAMC21_ADC::read(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
         if (_adc != NULL) {
             mux(pos, neg);
             _start();
-            _adc->SWTRIG.bit.START = 1;
+            _start();
             // Clear the Data Ready flag
             _adc->INTFLAG.reg = ADC_INTFLAG_RESRDY;
             // Start conversion again, since The first conversion after the reference is changed must not be used.
             _sync_wait();
-            _adc->SWTRIG.bit.START = 1;
+            _start();
             if (_wait()) {
                 val = value();
             }
