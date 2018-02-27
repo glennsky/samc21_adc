@@ -162,10 +162,12 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             mux = PORT->Group[pgroup].PMUX[ppin / 2].reg;
             if (ppin % 2 == 0) {
                 // Even pin
-                mux &= PORT_PMUX_PMUXO(0xF);
+                mux &= PORT_PMUX_PMUXE(0xF);
+                mux |= PORT_PMUX_PMUXE(1);  // B
             } else {
                 // Odd pin
-                mux &= PORT_PMUX_PMUXE(0xF);
+                mux &= PORT_PMUX_PMUXO(0xF);
+                mux |= PORT_PMUX_PMUXO(1);  // B
             }
             PORT->Group[pgroup].PMUX[ppin / 2].reg = mux;
         }
@@ -176,9 +178,11 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             if (npin % 2 == 0) {
                 // Even pin AND off the even part (mux setting 0)
                 mux &= ~PORT_PMUX_PMUXE(0xF);
+                mux |= PORT_PMUX_PMUXE(1);  // B
             } else {
                 // Odd pin AND off the odd part (mux setting 0)
-                mux &= ~PORT_PMUX_PMUXO(0xF);
+                mux &= ~PORT_PMUX_PMUXE(0xF);
+                mux |= PORT_PMUX_PMUXE(1);  // B
             }
             PORT->Group[ngroup].PMUX[npin / 2].reg = mux;
         }

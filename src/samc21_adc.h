@@ -197,8 +197,7 @@ public:
             if (_adc->SEQCTRL.reg != 0) {
                 return _adc->SEQSTATUS.bit.SEQBUSY == 1;
             } else {
-                
-            } 
+            }
         }
         return false;
     }
@@ -282,7 +281,7 @@ public:
     * @brief Enables a pin in the sequence
     *
     * @param pos The positive mux pin
-    * 
+    *
     * @return void
     */
     void seqEnable(samc21_adc_mux_pos pos)
@@ -290,7 +289,7 @@ public:
         if (_started()) {
             if (_adc != NULL) {
                 if (pos < 32) {
-                    _adc->SEQCTRL.reg |= 1<<pos;
+                    _adc->SEQCTRL.reg |= 1 << pos;
                     pins(pos);
                 }
             }
@@ -300,14 +299,14 @@ public:
     * @brief Disables a pin in the sequence
     *
     * @param pos The positive mux pin
-    * 
+    *
     * @return void
     */
     void seqDisable(samc21_adc_mux_pos pos)
     {
         if (_started()) {
             if (_adc != NULL) {
-                _adc->SEQCTRL.reg &= ~(1<<pos);
+                _adc->SEQCTRL.reg &= ~(1 << pos);
             }
         }
     }
@@ -350,7 +349,7 @@ private:
     void *_callback_ptr;           //!< Extra pointer for _callback
     void *_window_ptr;             //!< Extra pointer for _window
     bool _begun;
-    
+
     /**
     * This checks the clock sync
     *
@@ -491,7 +490,6 @@ private:
         if (_adc != NULL) {
             _adc->INPUTCTRL.reg = ((uint16_t)pos << ADC_INPUTCTRL_MUXPOS_Pos) | ((uint16_t)neg << ADC_INPUTCTRL_MUXNEG_Pos);
         }
-        
     }
     /**
     * @brief Starts the ADC
@@ -508,7 +506,6 @@ private:
             return true;
         }
         return false;
-        
     }
 
     /**
@@ -558,7 +555,7 @@ private:
         }
     }
 
-    
+
 };
 
 
