@@ -140,11 +140,9 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             if (neg < sizeof(ADC0_pins)) {
                 npin   = ADC0_pins[neg];
                 ngroup = ADC0_group[neg];
-            }
-            if (neg == SAMC21_ADC_MUXNEG_GND) {
-                _adc->CTRLC.bit.DIFFMODE = 0;
-            } else {
                 _adc->CTRLC.bit.DIFFMODE = 1;
+            } else {
+                _adc->CTRLC.bit.DIFFMODE = 0;
             }
         } else if (_adc == ADC1) {
             if (pos < sizeof(ADC1_pins)) {
@@ -154,6 +152,9 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             if (neg < sizeof(ADC1_pins)) {
                 npin   = ADC1_pins[neg];
                 ngroup = ADC1_group[neg];
+                _adc->CTRLC.bit.DIFFMODE = 1;
+            } else {
+                _adc->CTRLC.bit.DIFFMODE = 0;
             }
         }
         if (ppin != 0xFF) {
@@ -162,10 +163,10 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             mux = PORT->Group[pgroup].PMUX[ppin / 2].reg;
             if ((ppin & 1) == 0) {
                 // Even pin
-                mux = (mux & ~PORT_PMUX_PMUXE_Msk) |PORT_PMUX_PMUXE(1);  // B
+                mux = (mux & ~PORT_PMUX_PMUXE_Msk) | PORT_PMUX_PMUXE(1); // B
             } else {
                 // Odd pin
-                mux = (mux & ~PORT_PMUX_PMUXO_Msk) |PORT_PMUX_PMUXO(1);  // B
+                mux = (mux & ~PORT_PMUX_PMUXO_Msk) | PORT_PMUX_PMUXO(1); // B
             }
             PORT->Group[pgroup].PMUX[ppin / 2].reg = mux;
         }
@@ -175,10 +176,10 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             mux = PORT->Group[ngroup].PMUX[npin / 2].reg;
             if ((ppin & 1) == 0) {
                 // Even pin
-                mux = (mux & ~PORT_PMUX_PMUXE_Msk) |PORT_PMUX_PMUXE(1);  // B
+                mux = (mux & ~PORT_PMUX_PMUXE_Msk) | PORT_PMUX_PMUXE(1); // B
             } else {
                 // Odd pin
-                mux = (mux & ~PORT_PMUX_PMUXO_Msk) |PORT_PMUX_PMUXO(1);  // B
+                mux = (mux & ~PORT_PMUX_PMUXO_Msk) | PORT_PMUX_PMUXO(1); // B
             }
             PORT->Group[ngroup].PMUX[npin / 2].reg = mux;
         }
