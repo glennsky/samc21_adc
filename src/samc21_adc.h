@@ -337,6 +337,24 @@ public:
         }
         return false;
     };
+    /**
+     * @brief Adds a new read
+     * 
+     * @warning Do not use this function.
+     *
+     * @param value The value from the ADC
+     * @param seq   The sequence number
+     *
+     * @return true if there is a new reading
+     */
+    void addNew(int32_t value, uint8_t seq)
+    {
+        _val = value;
+        _count++;
+        if (_callback != NULL) {
+            _callback(this, _val, seq, _callback_ptr);
+        }
+    }
 
 private:
     Adc *_adc;                     //!< ADC Pointer
@@ -456,12 +474,8 @@ private:
         if (_started()) {
             if (_adc != NULL) {  // Check to see if there is something newer.
                 if (_adc->INTFLAG.bit.RESRDY) {
-                    _val = _adc->RESULT.reg;
-                    _count++;
+                    addNew(_adc->RESULT.reg, (uint8_t)_adc->SEQSTATUS.bit.SEQSTATE);
                     _adc->INTFLAG.bit.RESRDY = 1;   // Clear the flag
-                    if (_callback != NULL) {
-                        _callback(this, _val, (uint8_t)_adc->SEQSTATUS.bit.SEQSTATE, _callback_ptr);
-                    }
                     return true;
                 }
             }

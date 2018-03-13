@@ -247,12 +247,13 @@ void ADC0_Handler(void)
     uint8_t flags = ADC0->INTFLAG.reg;
     if (samc21_adc_obj[0] != NULL) {
         if ((flags & ADC_INTFLAG_RESRDY) == ADC_INTFLAG_RESRDY) {
-            samc21_adc_obj[0]->value();
+            samc21_adc_obj[0]->addNew(ADC0->RESULT.reg, (uint8_t)ADC0->SEQSTATUS.bit.SEQSTATE);
         }
         if ((flags & ADC_INTFLAG_WINMON) == ADC_INTFLAG_WINMON) {
             samc21_adc_obj[0]->window();
         }
     }
+    ADC0->INTFLAG.reg = flags;
 }
 
 
@@ -266,12 +267,13 @@ void ADC1_Handler(void)
     uint8_t flags = ADC1->INTFLAG.reg;
     if (samc21_adc_obj[1] != NULL) {
         if ((flags & ADC_INTFLAG_RESRDY) == ADC_INTFLAG_RESRDY) {
-            samc21_adc_obj[1]->value();
+            samc21_adc_obj[1]->addNew(ADC1->RESULT.reg, (uint8_t)ADC1->SEQSTATUS.bit.SEQSTATE);
         }
         if ((flags & ADC_INTFLAG_WINMON) == ADC_INTFLAG_WINMON) {
             samc21_adc_obj[1]->window();
         }
     }
+    ADC1->INTFLAG.reg = flags;
 }
 
 /**
