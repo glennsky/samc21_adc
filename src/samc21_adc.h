@@ -18,6 +18,10 @@
 #define SAMC21_ADC_MAX 4095
 #define SAMC21_ADC_AVG_MAX 65535
 
+#ifndef SAMC21_ADC_IRQ_PRIORITY
+#define SAMC21_ADC_IRQ_PRIORITY 2
+#endif
+
 class SAMC21_ADC;
 
 typedef void (*samc21_adc_callback)(SAMC21_ADC *, int32_t, uint8_t, void *);
@@ -407,7 +411,7 @@ private:
                     }
                     NVIC_DisableIRQ(irq);
                     NVIC_ClearPendingIRQ(irq);
-                    NVIC_SetPriority(irq, 1);
+                    NVIC_SetPriority(irq, SAMC21_ADC_IRQ_PRIORITY);
                     NVIC_EnableIRQ(irq);
                     _sync_wait();
                     _adc->INTENSET.reg = ADC_INTENSET_RESRDY;
