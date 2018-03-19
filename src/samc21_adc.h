@@ -21,6 +21,12 @@
 #ifndef SAMC21_ADC_IRQ_PRIORITY
 #define SAMC21_ADC_IRQ_PRIORITY 2
 #endif
+#ifndef SAMC21_ADC0_IRQ_PRIORITY
+#define SAMC21_ADC0_IRQ_PRIORITY SAMC21_ADC_IRQ_PRIORITY
+#endif
+#ifndef SAMC21_ADC1_IRQ_PRIORITY
+#define SAMC21_ADC1_IRQ_PRIORITY SAMC21_ADC_IRQ_PRIORITY
+#endif
 
 class SAMC21_ADC;
 
@@ -49,6 +55,7 @@ enum samc21_adc_avg_samples {
     SAMC21_ADC_AVGSAMPLES_256  = ADC_AVGCTRL_SAMPLENUM_256,
     SAMC21_ADC_AVGSAMPLES_512  = ADC_AVGCTRL_SAMPLENUM_512,
     SAMC21_ADC_AVGSAMPLES_1024 = ADC_AVGCTRL_SAMPLENUM_1024,
+    SAMC21_ADC_AVGSAMPLES_OFF
 };
 
 enum samc21_adc_avg_divisor {
@@ -399,6 +406,7 @@ private:
      */
     void _enable_irq(void)
     {
+        uint32_t priority;
         IRQn_Type irq = ADC0_IRQn;
         if (_started()) {
             if (_adc != NULL) {
@@ -411,7 +419,12 @@ private:
                     }
                     NVIC_DisableIRQ(irq);
                     NVIC_ClearPendingIRQ(irq);
-                    NVIC_SetPriority(irq, SAMC21_ADC_IRQ_PRIORITY);
+                    if (_adc == ADC0) {
+                        priority = SAMC21_ADC0_IRQ_PRIORITY;
+                    } else {
+                        priority = SAMC21_ADC1_IRQ_PRIORITY;
+                    }
+                    NVIC_SetPriority(irq, priority);
                     NVIC_EnableIRQ(irq);
                     _sync_wait();
                     _adc->INTENSET.reg = ADC_INTENSET_RESRDY;
