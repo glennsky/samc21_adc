@@ -54,7 +54,7 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
         _adc->CTRLB.reg = ADC_CTRLB_PRESCALER_DIV8;
         _adc->CTRLC.reg = ADC_CTRLC_RESSEL_12BIT | ADC_CTRLC_R2R;
         _sync_wait();
-        _adc->SAMPCTRL.reg = (ADC_SAMPCTRL_SAMPLEN(0x0) | ADC_SAMPCTRL_OFFCOMP);
+        _adc->SAMPCTRL.reg = (ADC_SAMPCTRL_SAMPLEN(0) | ADC_SAMPCTRL_OFFCOMP);
         ref(vref);
         mux();
         average();
@@ -84,9 +84,15 @@ bool SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor 
 {
     if (_started()) {
         if (_adc != NULL) {
-            _sync_wait();
-            _adc->AVGCTRL.reg = samples | div;
-            _adc->CTRLC.bit.RESSEL = 1; // 16 bit result
+            if (samples != SAMC21_ADC_AVGSAMPLES_1) {
+                _sync_wait();
+                _adc->AVGCTRL.reg = samples | div;
+                _adc->CTRLC.bit.RESSEL = 1; // 16 bit result
+            } else {
+                _sync_wait();
+                _adc->AVGCTRL.reg = 0;
+                _adc->CTRLC.bit.RESSEL = 0; // 12 bit result
+            }
             return true;
         }
     }
