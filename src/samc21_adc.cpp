@@ -13,6 +13,13 @@
 #define ADC_INPUTCTRL_MUXNEG_GND (0x18ul << ADC_INPUTCTRL_MUXNEG_Pos)
 #endif
 
+void *samc21_adc0_callback_ptr;           //!< Extra pointer for _callback
+samc21_adc_callback samc21_adc0_callback; //!< The callback function
+void *samc21_adc1_callback_ptr;           //!< Extra pointer for _callback
+samc21_adc_callback samc21_adc1_callback; //!< The callback function
+
+
+
 SAMC21_ADC *samc21_adc_obj[3] = {NULL, NULL, NULL};
 
 const uint8_t ADC0_pins[]  = {2, 3, 8, 9, 4, 5, 6, 7, 8, 9, 10, 11};
@@ -21,7 +28,7 @@ const uint8_t ADC1_pins[]  = {0, 1, 2, 3, 8, 9, 4, 5, 6, 7, 8, 9};
 const uint8_t ADC1_group[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0};
 
 SAMC21_ADC::SAMC21_ADC(Adc *Conv)
-    : _adc(Conv), _count(0), _val(INT32_MIN), _callback(NULL), _window(NULL), _new(0), _int(0), _begun(false)
+    : _adc(Conv), _count(0), _val(INT32_MIN), _window(NULL), _new(0), _int(0), _begun(false)
 {
 };
 
@@ -253,7 +260,11 @@ void ADC0_Handler(void)
     uint8_t flags = ADC0->INTFLAG.reg;
     if (samc21_adc_obj[0] != NULL) {
         if ((flags & ADC_INTFLAG_RESRDY) == ADC_INTFLAG_RESRDY) {
-            samc21_adc_obj[0]->addNew(ADC0->RESULT.reg, (uint8_t)ADC0->SEQSTATUS.bit.SEQSTATE);
+            if (samc21_adc0_callback != NULL) {
+                samc21_adc0_callback(samc21_adc_obj[0], ADC0->RESULT.reg, (uint8_t)ADC0->SEQSTATUS.bit.SEQSTATE, samc21_adc0_callback_ptr);
+            } else {
+                samc21_adc_obj[0]->addNew(ADC0->RESULT.reg, (uint8_t)ADC0->SEQSTATUS.bit.SEQSTATE);
+            }
         }
         if ((flags & ADC_INTFLAG_WINMON) == ADC_INTFLAG_WINMON) {
             samc21_adc_obj[0]->window();
@@ -273,7 +284,11 @@ void ADC1_Handler(void)
     uint8_t flags = ADC1->INTFLAG.reg;
     if (samc21_adc_obj[1] != NULL) {
         if ((flags & ADC_INTFLAG_RESRDY) == ADC_INTFLAG_RESRDY) {
-            samc21_adc_obj[1]->addNew(ADC1->RESULT.reg, (uint8_t)ADC1->SEQSTATUS.bit.SEQSTATE);
+            if (samc21_adc1_callback != NULL) {
+                samc21_adc1_callback(samc21_adc_obj[1], ADC1->RESULT.reg, (uint8_t)ADC1->SEQSTATUS.bit.SEQSTATE, samc21_adc1_callback_ptr);
+            } else {
+                samc21_adc_obj[1]->addNew(ADC1->RESULT.reg, (uint8_t)ADC1->SEQSTATUS.bit.SEQSTATE);
+            }
         }
         if ((flags & ADC_INTFLAG_WINMON) == ADC_INTFLAG_WINMON) {
             samc21_adc_obj[1]->window();

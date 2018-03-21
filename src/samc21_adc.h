@@ -32,6 +32,12 @@ class SAMC21_ADC;
 
 typedef void (*samc21_adc_callback)(SAMC21_ADC *, int32_t, uint8_t, void *);
 
+extern void *samc21_adc0_callback_ptr;
+extern samc21_adc_callback samc21_adc0_callback;
+extern void *samc21_adc1_callback_ptr;
+extern samc21_adc_callback samc21_adc1_callback;
+
+
 enum samc21_adc_ref {
     SAMC21_ADC_REF_INTVCC0 = 1,
     SAMC21_ADC_REF_INTVCC1 = 2,
@@ -230,9 +236,13 @@ public:
     */
     void callback(samc21_adc_callback cb, void *ptr = NULL)
     {
-        if (_adc != NULL) {
-            _callback = cb;
-            _callback_ptr = ptr;
+        if (_adc == ADC0) {
+            samc21_adc0_callback = cb;
+            samc21_adc0_callback_ptr = ptr;
+            _enable_irq();
+        } else if (_adc == ADC1) {
+            samc21_adc1_callback = cb;
+            samc21_adc1_callback_ptr = ptr;
             _enable_irq();
         }
     };
@@ -362,20 +372,15 @@ public:
     {
         _val = value;
         _count++;
-        if (_callback != NULL) {
-            _callback(this, _val, seq, _callback_ptr);
-        }
     }
 
 private:
     Adc *_adc;                     //!< ADC Pointer
     volatile uint32_t _count;      //!< Flag to say we have a new reading
     volatile int32_t _val;         //!< The value of the last ADC read
-    samc21_adc_callback _callback; //!< The callback function
     samc21_adc_callback _window;   //!< The callback function for the windowing
     uint32_t _new;                 //!< This is a container for the new function
     bool _int;                     //!< 1 if we are in interrupt mode
-    void *_callback_ptr;           //!< Extra pointer for _callback
     void *_window_ptr;             //!< Extra pointer for _window
     bool _begun;
 
