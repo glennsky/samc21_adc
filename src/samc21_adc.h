@@ -130,7 +130,7 @@ public:
     *
     * @return void
     */
-    uint8_t begin(samc21_adc_ref vref = SAMC21_ADC_REF_1024);
+    uint8_t begin(samc21_adc_ref vref = SAMC21_ADC_REF_1024, uint8_t clock_prescaler = ADC_CTRLB_PRESCALER_DIV8);
     /**
      * @brief Stops the ADC
      *

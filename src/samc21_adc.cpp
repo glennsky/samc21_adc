@@ -19,7 +19,6 @@ void *samc21_adc1_callback_ptr;           //!< Extra pointer for _callback
 samc21_adc_callback samc21_adc1_callback; //!< The callback function
 
 
-
 SAMC21_ADC *samc21_adc_obj[3] = {NULL, NULL, NULL};
 
 const uint8_t ADC0_pins[]  = {2, 3, 8, 9, 4, 5, 6, 7, 8, 9, 10, 11};
@@ -32,7 +31,7 @@ SAMC21_ADC::SAMC21_ADC(Adc *Conv)
 {
 };
 
-uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
+uint8_t SAMC21_ADC::begin(samc21_adc_ref vref, uint8_t clock_prescaler)
 {
     uint32_t biasrefbuf = 0;
     uint32_t biascomp = 0;
@@ -58,7 +57,7 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
         _adc->CTRLA.bit.SWRST;
         _sync_wait();
         _adc->CALIB.reg = ADC_CALIB_BIASREFBUF(biasrefbuf) | ADC_CALIB_BIASCOMP(biascomp);
-        _adc->CTRLB.reg = ADC_CTRLB_PRESCALER_DIV8;
+        _adc->CTRLB.reg = (clock_prescaler & ADC_CTRLB_PRESCALER_Msk);
         _adc->CTRLC.reg = ADC_CTRLC_RESSEL_12BIT | ADC_CTRLC_R2R;
         _sync_wait();
         _adc->SAMPCTRL.reg = (ADC_SAMPCTRL_SAMPLEN(0) | ADC_SAMPCTRL_OFFCOMP);
