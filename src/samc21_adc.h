@@ -360,7 +360,7 @@ public:
     };
     /**
      * @brief Adds a new read
-     * 
+     *
      * @warning Do not use this function.
      *
      * @param value The value from the ADC

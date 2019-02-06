@@ -108,7 +108,10 @@ bool SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor 
 bool SAMC21_ADC::ref(samc21_adc_ref vref)
 {
     bool set = false;
-    if ((_adc != NULL) && !_enabled()) {
+    if (_adc != NULL) {
+        if (_enabled()) {
+            _disable();
+        }
         switch (vref) {
             case SAMC21_ADC_REF_1024:
             case SAMC21_ADC_REF_2048:
@@ -256,7 +259,7 @@ int32_t SAMC21_ADC::value(void)
  */
 void ADC0_Handler(void)
 {
-#ifdef ADC0_AVERAGE_BITS 
+#ifdef ADC0_AVERAGE_BITS
     volatile static int32_t  acc = 0;
     volatile static uint16_t cnt = 0;
     int32_t read;
@@ -264,7 +267,7 @@ void ADC0_Handler(void)
     uint8_t flags = ADC0->INTFLAG.reg;
     if (samc21_adc_obj[0] != NULL) {
         if ((flags & ADC_INTFLAG_RESRDY) == ADC_INTFLAG_RESRDY) {
-#ifdef ADC0_AVERAGE_BITS 
+#ifdef ADC0_AVERAGE_BITS
             acc += (int16_t)ADC0->RESULT.reg;
             cnt++;
             if (cnt >= (1 << ADC0_AVERAGE_BITS)) {
@@ -300,7 +303,7 @@ void ADC0_Handler(void)
  */
 void ADC1_Handler(void)
 {
-#ifdef ADC1_AVERAGE_BITS 
+#ifdef ADC1_AVERAGE_BITS
     volatile static int32_t  acc = 0;
     volatile static uint16_t cnt = 0;
     int32_t read;
@@ -308,7 +311,7 @@ void ADC1_Handler(void)
     uint8_t flags = ADC1->INTFLAG.reg;
     if (samc21_adc_obj[1] != NULL) {
         if ((flags & ADC_INTFLAG_RESRDY) == ADC_INTFLAG_RESRDY) {
-#ifdef ADC1_AVERAGE_BITS 
+#ifdef ADC1_AVERAGE_BITS
             acc += (int16_t)ADC1->RESULT.reg;
             cnt++;
             if (cnt >= (1 << ADC1_AVERAGE_BITS)) {
