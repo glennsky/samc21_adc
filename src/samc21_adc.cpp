@@ -259,10 +259,10 @@ int32_t SAMC21_ADC::value(void)
  */
 void ADC0_Handler(void)
 {
+    int32_t read;
 #ifdef ADC0_AVERAGE_BITS
     volatile static int32_t  acc = 0;
     volatile static uint16_t cnt = 0;
-    int32_t read;
 #endif
     uint8_t flags = ADC0->INTFLAG.reg;
     if (samc21_adc_obj[0] != NULL) {
@@ -281,8 +281,13 @@ void ADC0_Handler(void)
                 cnt = 0;
             }
 #else
+            if (ADC0->CTRLC.bit.DIFFMODE == 1) {
+                read = (int16_t)ADC0->RESULT.reg;
+            } else {
+                read = (uint16_t)ADC0->RESULT.reg;
+            }
             if (samc21_adc0_callback != NULL) {
-                samc21_adc0_callback(samc21_adc_obj[0], ADC0->RESULT.reg, (uint8_t)ADC0->SEQSTATUS.bit.SEQSTATE, samc21_adc0_callback_ptr);
+                samc21_adc0_callback(samc21_adc_obj[0], read, (uint8_t)ADC0->SEQSTATUS.bit.SEQSTATE, samc21_adc0_callback_ptr);
             } else {
                 samc21_adc_obj[0]->addNew(ADC0->RESULT.reg, (uint8_t)ADC0->SEQSTATUS.bit.SEQSTATE);
             }
@@ -303,10 +308,10 @@ void ADC0_Handler(void)
  */
 void ADC1_Handler(void)
 {
+    int32_t read;
 #ifdef ADC1_AVERAGE_BITS
     volatile static int32_t  acc = 0;
     volatile static uint16_t cnt = 0;
-    int32_t read;
 #endif
     uint8_t flags = ADC1->INTFLAG.reg;
     if (samc21_adc_obj[1] != NULL) {
@@ -325,8 +330,13 @@ void ADC1_Handler(void)
                 cnt = 0;
             }
 #else
+            if (ADC0->CTRLC.bit.DIFFMODE == 1) {
+                read = (int16_t)ADC1->RESULT.reg;
+            } else {
+                read = (uint16_t)ADC1->RESULT.reg;
+            }
             if (samc21_adc1_callback != NULL) {
-                samc21_adc1_callback(samc21_adc_obj[1], ADC1->RESULT.reg, (uint8_t)ADC1->SEQSTATUS.bit.SEQSTATE, samc21_adc1_callback_ptr);
+                samc21_adc1_callback(samc21_adc_obj[1], read, (uint8_t)ADC1->SEQSTATUS.bit.SEQSTATE, samc21_adc1_callback_ptr);
             } else {
                 samc21_adc_obj[1]->addNew(ADC1->RESULT.reg, (uint8_t)ADC1->SEQSTATUS.bit.SEQSTATE);
             }
