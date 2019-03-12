@@ -204,6 +204,32 @@ public:
     bool run(void);
 
     /**
+    * @brief Sets diff mode on or off
+    *
+    * @param on If true diff mode is set on
+    *
+    * @return void
+    */
+    void diff(bool on)
+    {
+        if (on) {
+            _adc->CTRLC.bit.DIFFMODE = 1;
+        } else {
+            _adc->CTRLC.bit.DIFFMODE = 0;
+        }
+    }
+    /**
+    * @brief Returns the diff mode
+    *
+    * @return True if diffmode is on.
+    */
+    bool diff(void)
+    {
+        return (_adc->CTRLC.bit.DIFFMODE == 1);
+    }
+
+    
+    /**
     * @brief Says if the sequence is busy
     *
     * @return void

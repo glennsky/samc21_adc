@@ -155,9 +155,9 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             if (neg < sizeof(ADC0_pins)) {
                 npin   = ADC0_pins[neg];
                 ngroup = ADC0_group[neg];
-                _adc->CTRLC.bit.DIFFMODE = 1;
+                diff(true);
             } else {
-                _adc->CTRLC.bit.DIFFMODE = 0;
+                diff(false);
             }
         } else if (_adc == ADC1) {
             if (pos < sizeof(ADC1_pins)) {
@@ -167,9 +167,9 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             if (neg < sizeof(ADC1_pins)) {
                 npin   = ADC1_pins[neg];
                 ngroup = ADC1_group[neg];
-                _adc->CTRLC.bit.DIFFMODE = 1;
+                diff(true);
             } else {
-                _adc->CTRLC.bit.DIFFMODE = 0;
+                diff(false);
             }
         }
         if (ppin != 0xFF) {
@@ -281,7 +281,7 @@ void ADC0_Handler(void)
                 cnt = 0;
             }
 #else
-            if (ADC0->CTRLC.bit.DIFFMODE == 1) {
+            if (samc21_adc_obj[0]->diff()) {
                 read = (int16_t)ADC0->RESULT.reg;
             } else {
                 read = (uint16_t)ADC0->RESULT.reg;
@@ -330,7 +330,7 @@ void ADC1_Handler(void)
                 cnt = 0;
             }
 #else
-            if (ADC0->CTRLC.bit.DIFFMODE == 1) {
+            if (samc21_adc_obj[1]->diff()) {
                 read = (int16_t)ADC1->RESULT.reg;
             } else {
                 read = (uint16_t)ADC1->RESULT.reg;
