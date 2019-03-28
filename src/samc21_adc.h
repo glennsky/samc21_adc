@@ -18,6 +18,9 @@
 #define SAMC21_ADC_MAX 4095
 #define SAMC21_ADC_AVG_MAX 65535
 
+#define DEFAULT_GAIN      0x800
+#define DEFAULT_OFFSET    0
+
 class SAMC21_ADC;
 
 typedef void (*samc21_adc_callback)(SAMC21_ADC *, int32_t, uint8_t, void *);
@@ -336,6 +339,82 @@ public:
             return true;
         }
         return false;
+    }
+    /**
+    * @brief Turns on and off the digital correction (@see gain() and @see offset() funcitons)
+    *
+    * @param value True causes the digital correction to be enabled
+    *
+    * @return True if enabled, false otherwise
+    */
+    bool digitalCorrection(bool value)
+    {
+        if (value) {
+            _adc->CTRLC.bits.CORREN = 1;
+        } else {
+            _adc->CTRLC.bits.CORREN = 0;
+        }
+        return digitalCorrection();
+    }
+    /**
+    * @brief  Returns true if digital correction is enabled (@see gain() and @see offset() funcitons)
+    *
+    * @return True if enabled, false otherwise
+    */
+    bool digitalCorrection(void)
+    {
+        return (bool)_adc->CTRLC.bits.CORREN;
+    }
+
+    /**
+    * @brief Sets the offset correction value for the ADC
+    *
+    * @param value The new offset correction value (12 bits)
+    *
+    * @return The new offset correction value
+    */
+    uint16_t offset(uint16_t value)
+    {
+        _adc->OFFSETCORR.reg = value & ADC_OFFSETCORR_OFFSETCORR_Msk;
+        return offset();
+    }
+    /**
+    * @brief Sets the offset correction value for the ADC
+    *
+    * @return The offset correction value
+    */
+    uint16_t offset(void)
+    {
+        return _adc->OFFSETCORR.reg & ADC_OFFSETCORR_OFFSETCORR_Msk;
+    }
+    /**
+    * @brief Sets the gain correction value for the ADC
+    *
+    * @note: The gain correction is a fractional value, a 1-bit integer plus an
+    *       11-bit fraction, and therefore 1⁄2 <= GAINCORR < 2. GAINCORR values
+    *       range from 0.10000000000 to 1.11111111111.
+    *
+    * @param value The new offset correction value (12 bits)
+    *
+    * @return The new gain correction value
+    */
+    uint16_t gain(uint16_t value)
+    {
+        _adc->GAINCORR.reg = value & ADC_GAINCORR_OFFSETCORR_Msk;
+        return gain();
+    }
+    /**
+    * @brief Gets the gain correction value for the ADC
+    *
+    * @note: The gain correction is a fractional value, a 1-bit integer plus an
+    *       11-bit fraction, and therefore 1⁄2 <= GAINCORR < 2. GAINCORR values
+    *       range from 0.10000000000 to 1.11111111111.
+    *
+    * @return The gain correction value
+    */
+    uint16_t gain(void)
+    {
+        return _adc->GAINCORR.reg & ADC_GAINCORR_OFFSETCORR_Msk;
     };
 
 private:

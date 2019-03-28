@@ -55,6 +55,8 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
         _adc->CTRLC.reg = ADC_CTRLC_RESSEL_12BIT | ADC_CTRLC_R2R;
         _sync_wait();
         _adc->SAMPCTRL.reg = (ADC_SAMPCTRL_SAMPLEN(0x0) | ADC_SAMPCTRL_OFFCOMP);
+        gain(DEFAULT_GAIN);
+        offset(DEFAULT_OFFSET);
         ref(vref);
         mux();
         average();
@@ -162,10 +164,10 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             mux = PORT->Group[pgroup].PMUX[ppin / 2].reg;
             if ((ppin & 1) == 0) {
                 // Even pin
-                mux = (mux & ~PORT_PMUX_PMUXE_Msk) |PORT_PMUX_PMUXE(1);  // B
+                mux = (mux & ~PORT_PMUX_PMUXE_Msk) | PORT_PMUX_PMUXE(1); // B
             } else {
                 // Odd pin
-                mux = (mux & ~PORT_PMUX_PMUXO_Msk) |PORT_PMUX_PMUXO(1);  // B
+                mux = (mux & ~PORT_PMUX_PMUXO_Msk) | PORT_PMUX_PMUXO(1); // B
             }
             PORT->Group[pgroup].PMUX[ppin / 2].reg = mux;
         }
@@ -175,10 +177,10 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             mux = PORT->Group[ngroup].PMUX[npin / 2].reg;
             if ((ppin & 1) == 0) {
                 // Even pin
-                mux = (mux & ~PORT_PMUX_PMUXE_Msk) |PORT_PMUX_PMUXE(1);  // B
+                mux = (mux & ~PORT_PMUX_PMUXE_Msk) | PORT_PMUX_PMUXE(1); // B
             } else {
                 // Odd pin
-                mux = (mux & ~PORT_PMUX_PMUXO_Msk) |PORT_PMUX_PMUXO(1);  // B
+                mux = (mux & ~PORT_PMUX_PMUXO_Msk) | PORT_PMUX_PMUXO(1); // B
             }
             PORT->Group[ngroup].PMUX[npin / 2].reg = mux;
         }
