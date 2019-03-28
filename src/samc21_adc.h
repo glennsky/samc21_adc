@@ -231,7 +231,7 @@ public:
         return (_adc->CTRLC.bit.DIFFMODE == 1);
     }
 
-    
+
     /**
     * @brief Says if the sequence is busy
     *
@@ -397,9 +397,9 @@ public:
     bool digitalCorrection(bool value)
     {
         if (value) {
-            _adc->CTRLC.bits.CORREN = 1;
+            _adc->CTRLC.bit.CORREN = 1;
         } else {
-            _adc->CTRLC.bits.CORREN = 0;
+            _adc->CTRLC.bit.CORREN = 0;
         }
         return digitalCorrection();
     }
@@ -410,7 +410,7 @@ public:
     */
     bool digitalCorrection(void)
     {
-        return (bool)_adc->CTRLC.bits.CORREN;
+        return (bool)_adc->CTRLC.bit.CORREN;
     }
 
     /**
@@ -447,7 +447,7 @@ public:
     */
     uint16_t gain(uint16_t value)
     {
-        _adc->GAINCORR.reg = value & ADC_GAINCORR_OFFSETCORR_Msk;
+        _adc->GAINCORR.reg = value & ADC_GAINCORR_GAINCORR_Msk;
         return gain();
     }
     /**
@@ -461,7 +461,7 @@ public:
     */
     uint16_t gain(void)
     {
-        return _adc->GAINCORR.reg & ADC_GAINCORR_OFFSETCORR_Msk;
+        return _adc->GAINCORR.reg & ADC_GAINCORR_GAINCORR_Msk;
     };
     /**
      * @brief Adds a new read
