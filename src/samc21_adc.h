@@ -422,7 +422,7 @@ public:
     */
     uint16_t offset(uint16_t value)
     {
-        _adc->OFFSETCORR.reg = value & ADC_OFFSETCORR_OFFSETCORR_Msk;
+        _adc->OFFSETCORR.reg = (value & ADC_OFFSETCORR_OFFSETCORR_Msk) << ADC_OFFSETCORR_OFFSETCORR_Pos;
         return offset();
     }
     /**
@@ -432,7 +432,7 @@ public:
     */
     uint16_t offset(void)
     {
-        return _adc->OFFSETCORR.reg & ADC_OFFSETCORR_OFFSETCORR_Msk;
+        return (_adc->OFFSETCORR.reg & ADC_OFFSETCORR_OFFSETCORR_Msk) >> ADC_OFFSETCORR_OFFSETCORR_Pos;
     }
     /**
     * @brief Sets the gain correction value for the ADC
@@ -447,7 +447,7 @@ public:
     */
     uint16_t gain(uint16_t value)
     {
-        _adc->GAINCORR.reg = value & ADC_GAINCORR_GAINCORR_Msk;
+        _adc->GAINCORR.reg = (value & ADC_GAINCORR_GAINCORR_Msk) << ADC_GAINCORR_GAINCORR_Pos;
         return gain();
     }
     /**
@@ -461,7 +461,7 @@ public:
     */
     uint16_t gain(void)
     {
-        return _adc->GAINCORR.reg & ADC_GAINCORR_GAINCORR_Msk;
+        return (_adc->GAINCORR.reg & ADC_GAINCORR_GAINCORR_Msk) << ADC_GAINCORR_GAINCORR_Pos;
     };
     /**
      * @brief Adds a new read
