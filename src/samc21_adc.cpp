@@ -13,6 +13,12 @@
 #define ADC_INPUTCTRL_MUXNEG_GND (0x18ul << ADC_INPUTCTRL_MUXNEG_Pos)
 #endif
 
+void *samc21_adc0_callback_ptr;           //!< Extra pointer for _callback
+samc21_adc_callback samc21_adc0_callback; //!< The callback function
+void *samc21_adc1_callback_ptr;           //!< Extra pointer for _callback
+samc21_adc_callback samc21_adc1_callback; //!< The callback function
+
+
 SAMC21_ADC *samc21_adc_obj[3] = {NULL, NULL, NULL};
 
 const uint8_t ADC0_pins[]  = {2, 3, 8, 9, 4, 5, 6, 7, 8, 9, 10, 11};
@@ -21,11 +27,11 @@ const uint8_t ADC1_pins[]  = {0, 1, 2, 3, 8, 9, 4, 5, 6, 7, 8, 9};
 const uint8_t ADC1_group[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0};
 
 SAMC21_ADC::SAMC21_ADC(Adc *Conv)
-    : _adc(Conv), _count(0), _val(INT32_MIN), _callback(NULL), _window(NULL), _new(0), _int(0), _begun(false)
+    : _adc(Conv), _count(0), _val(INT32_MIN), _window(NULL), _new(0), _int(0), _begun(false)
 {
 };
 
-uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
+uint8_t SAMC21_ADC::begin(samc21_adc_ref vref, uint8_t clock_prescaler)
 {
     uint32_t biasrefbuf = 0;
     uint32_t biascomp = 0;
@@ -51,7 +57,7 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref)
         _adc->CTRLA.bit.SWRST;
         _sync_wait();
         _adc->CALIB.reg = ADC_CALIB_BIASREFBUF(biasrefbuf) | ADC_CALIB_BIASCOMP(biascomp);
-        _adc->CTRLB.reg = ADC_CTRLB_PRESCALER_DIV8;
+        _adc->CTRLB.reg = (clock_prescaler & ADC_CTRLB_PRESCALER_Msk);
         _adc->CTRLC.reg = ADC_CTRLC_RESSEL_12BIT | ADC_CTRLC_R2R;
         _sync_wait();
         _adc->SAMPCTRL.reg = (ADC_SAMPCTRL_SAMPLEN(0x0) | ADC_SAMPCTRL_OFFCOMP);
@@ -86,9 +92,15 @@ bool SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor 
 {
     if (_started()) {
         if (_adc != NULL) {
-            _sync_wait();
-            _adc->AVGCTRL.reg = samples | div;
-            _adc->CTRLC.bit.RESSEL = 1; // 16 bit result
+            if (samples != SAMC21_ADC_AVGSAMPLES_1) {
+                _sync_wait();
+                _adc->AVGCTRL.reg = samples | div;
+                _adc->CTRLC.bit.RESSEL = 1; // 16 bit result
+            } else {
+                _sync_wait();
+                _adc->AVGCTRL.reg = 0;
+                _adc->CTRLC.bit.RESSEL = 0; // 12 bit result
+            }
             return true;
         }
     }
@@ -98,7 +110,10 @@ bool SAMC21_ADC::average(samc21_adc_avg_samples samples, samc21_adc_avg_divisor 
 bool SAMC21_ADC::ref(samc21_adc_ref vref)
 {
     bool set = false;
-    if ((_adc != NULL) && !_enabled()) {
+    if (_adc != NULL) {
+        if (_enabled()) {
+            _disable();
+        }
         switch (vref) {
             case SAMC21_ADC_REF_1024:
             case SAMC21_ADC_REF_2048:
@@ -142,11 +157,9 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             if (neg < sizeof(ADC0_pins)) {
                 npin   = ADC0_pins[neg];
                 ngroup = ADC0_group[neg];
-            }
-            if (neg == SAMC21_ADC_MUXNEG_GND) {
-                _adc->CTRLC.bit.DIFFMODE = 0;
+                diff(true);
             } else {
-                _adc->CTRLC.bit.DIFFMODE = 1;
+                diff(false);
             }
         } else if (_adc == ADC1) {
             if (pos < sizeof(ADC1_pins)) {
@@ -156,6 +169,9 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             if (neg < sizeof(ADC1_pins)) {
                 npin   = ADC1_pins[neg];
                 ngroup = ADC1_group[neg];
+                diff(true);
+            } else {
+                diff(false);
             }
         }
         if (ppin != 0xFF) {
@@ -245,15 +261,45 @@ int32_t SAMC21_ADC::value(void)
  */
 void ADC0_Handler(void)
 {
+    int32_t read;
+#ifdef ADC0_AVERAGE_BITS
+    volatile static int32_t  acc = 0;
+    volatile static uint16_t cnt = 0;
+#endif
     uint8_t flags = ADC0->INTFLAG.reg;
     if (samc21_adc_obj[0] != NULL) {
         if ((flags & ADC_INTFLAG_RESRDY) == ADC_INTFLAG_RESRDY) {
-            samc21_adc_obj[0]->value();
+#ifdef ADC0_AVERAGE_BITS
+            acc += (int16_t)ADC0->RESULT.reg;
+            cnt++;
+            if (cnt >= (1 << ADC0_AVERAGE_BITS)) {
+                read = (acc >> (ADC0_AVERAGE_BITS - 4));
+                if (samc21_adc0_callback != NULL) {
+                    samc21_adc0_callback(samc21_adc_obj[0], read, (uint8_t)ADC0->SEQSTATUS.bit.SEQSTATE, samc21_adc0_callback_ptr);
+                } else {
+                    samc21_adc_obj[0]->addNew(read, (uint8_t)ADC0->SEQSTATUS.bit.SEQSTATE);
+                }
+                acc = 0;
+                cnt = 0;
+            }
+#else
+            if (samc21_adc_obj[0]->diff()) {
+                read = (int16_t)ADC0->RESULT.reg;
+            } else {
+                read = (uint16_t)ADC0->RESULT.reg;
+            }
+            if (samc21_adc0_callback != NULL) {
+                samc21_adc0_callback(samc21_adc_obj[0], read, (uint8_t)ADC0->SEQSTATUS.bit.SEQSTATE, samc21_adc0_callback_ptr);
+            } else {
+                samc21_adc_obj[0]->addNew(ADC0->RESULT.reg, (uint8_t)ADC0->SEQSTATUS.bit.SEQSTATE);
+            }
+#endif
         }
         if ((flags & ADC_INTFLAG_WINMON) == ADC_INTFLAG_WINMON) {
             samc21_adc_obj[0]->window();
         }
     }
+    ADC0->INTFLAG.reg = flags;
 }
 
 
@@ -264,15 +310,45 @@ void ADC0_Handler(void)
  */
 void ADC1_Handler(void)
 {
+    int32_t read;
+#ifdef ADC1_AVERAGE_BITS
+    volatile static int32_t  acc = 0;
+    volatile static uint16_t cnt = 0;
+#endif
     uint8_t flags = ADC1->INTFLAG.reg;
     if (samc21_adc_obj[1] != NULL) {
         if ((flags & ADC_INTFLAG_RESRDY) == ADC_INTFLAG_RESRDY) {
-            samc21_adc_obj[1]->value();
+#ifdef ADC1_AVERAGE_BITS
+            acc += (int16_t)ADC1->RESULT.reg;
+            cnt++;
+            if (cnt >= (1 << ADC1_AVERAGE_BITS)) {
+                read = (acc >> (ADC1_AVERAGE_BITS - 4));
+                if (samc21_adc1_callback != NULL) {
+                    samc21_adc1_callback(samc21_adc_obj[1], read, (uint8_t)ADC1->SEQSTATUS.bit.SEQSTATE, samc21_adc1_callback_ptr);
+                } else {
+                    samc21_adc_obj[1]->addNew(read, (uint8_t)ADC1->SEQSTATUS.bit.SEQSTATE);
+                }
+                acc = 0;
+                cnt = 0;
+            }
+#else
+            if (samc21_adc_obj[1]->diff()) {
+                read = (int16_t)ADC1->RESULT.reg;
+            } else {
+                read = (uint16_t)ADC1->RESULT.reg;
+            }
+            if (samc21_adc1_callback != NULL) {
+                samc21_adc1_callback(samc21_adc_obj[1], read, (uint8_t)ADC1->SEQSTATUS.bit.SEQSTATE, samc21_adc1_callback_ptr);
+            } else {
+                samc21_adc_obj[1]->addNew(ADC1->RESULT.reg, (uint8_t)ADC1->SEQSTATUS.bit.SEQSTATE);
+            }
+#endif
         }
         if ((flags & ADC_INTFLAG_WINMON) == ADC_INTFLAG_WINMON) {
             samc21_adc_obj[1]->window();
         }
     }
+    ADC1->INTFLAG.reg = flags;
 }
 
 /**

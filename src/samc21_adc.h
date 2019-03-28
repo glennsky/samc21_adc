@@ -21,9 +21,25 @@
 #define DEFAULT_GAIN      0x800
 #define DEFAULT_OFFSET    0
 
+#ifndef SAMC21_ADC_IRQ_PRIORITY
+#define SAMC21_ADC_IRQ_PRIORITY 2
+#endif
+#ifndef SAMC21_ADC0_IRQ_PRIORITY
+#define SAMC21_ADC0_IRQ_PRIORITY SAMC21_ADC_IRQ_PRIORITY
+#endif
+#ifndef SAMC21_ADC1_IRQ_PRIORITY
+#define SAMC21_ADC1_IRQ_PRIORITY SAMC21_ADC_IRQ_PRIORITY
+#endif
+
 class SAMC21_ADC;
 
 typedef void (*samc21_adc_callback)(SAMC21_ADC *, int32_t, uint8_t, void *);
+
+extern void *samc21_adc0_callback_ptr;
+extern samc21_adc_callback samc21_adc0_callback;
+extern void *samc21_adc1_callback_ptr;
+extern samc21_adc_callback samc21_adc1_callback;
+
 
 enum samc21_adc_ref {
     SAMC21_ADC_REF_INTVCC0 = 1,
@@ -48,6 +64,7 @@ enum samc21_adc_avg_samples {
     SAMC21_ADC_AVGSAMPLES_256  = ADC_AVGCTRL_SAMPLENUM_256,
     SAMC21_ADC_AVGSAMPLES_512  = ADC_AVGCTRL_SAMPLENUM_512,
     SAMC21_ADC_AVGSAMPLES_1024 = ADC_AVGCTRL_SAMPLENUM_1024,
+    SAMC21_ADC_AVGSAMPLES_OFF
 };
 
 enum samc21_adc_avg_divisor {
@@ -116,7 +133,7 @@ public:
     *
     * @return void
     */
-    uint8_t begin(samc21_adc_ref vref = SAMC21_ADC_REF_1024);
+    uint8_t begin(samc21_adc_ref vref = SAMC21_ADC_REF_1024, uint8_t clock_prescaler = ADC_CTRLB_PRESCALER_DIV8);
     /**
      * @brief Stops the ADC
      *
@@ -190,6 +207,32 @@ public:
     bool run(void);
 
     /**
+    * @brief Sets diff mode on or off
+    *
+    * @param on If true diff mode is set on
+    *
+    * @return void
+    */
+    void diff(bool on)
+    {
+        if (on) {
+            _adc->CTRLC.bit.DIFFMODE = 1;
+        } else {
+            _adc->CTRLC.bit.DIFFMODE = 0;
+        }
+    }
+    /**
+    * @brief Returns the diff mode
+    *
+    * @return True if diffmode is on.
+    */
+    bool diff(void)
+    {
+        return (_adc->CTRLC.bit.DIFFMODE == 1);
+    }
+
+    
+    /**
     * @brief Says if the sequence is busy
     *
     * @return void
@@ -222,9 +265,13 @@ public:
     */
     void callback(samc21_adc_callback cb, void *ptr = NULL)
     {
-        if (_adc != NULL) {
-            _callback = cb;
-            _callback_ptr = ptr;
+        if (_adc == ADC0) {
+            samc21_adc0_callback = cb;
+            samc21_adc0_callback_ptr = ptr;
+            _enable_irq();
+        } else if (_adc == ADC1) {
+            samc21_adc1_callback = cb;
+            samc21_adc1_callback_ptr = ptr;
             _enable_irq();
         }
     };
@@ -416,16 +463,29 @@ public:
     {
         return _adc->GAINCORR.reg & ADC_GAINCORR_OFFSETCORR_Msk;
     };
+    /**
+     * @brief Adds a new read
+     *
+     * @warning Do not use this function.
+     *
+     * @param value The value from the ADC
+     * @param seq   The sequence number
+     *
+     * @return true if there is a new reading
+     */
+    void addNew(int32_t value, uint8_t seq)
+    {
+        _val = value;
+        _count++;
+    }
 
 private:
     Adc *_adc;                     //!< ADC Pointer
     volatile uint32_t _count;      //!< Flag to say we have a new reading
     volatile int32_t _val;         //!< The value of the last ADC read
-    samc21_adc_callback _callback; //!< The callback function
     samc21_adc_callback _window;   //!< The callback function for the windowing
     uint32_t _new;                 //!< This is a container for the new function
     bool _int;                     //!< 1 if we are in interrupt mode
-    void *_callback_ptr;           //!< Extra pointer for _callback
     void *_window_ptr;             //!< Extra pointer for _window
     bool _begun;
 
@@ -456,6 +516,7 @@ private:
      */
     void _enable_irq(void)
     {
+        uint32_t priority;
         IRQn_Type irq = ADC0_IRQn;
         if (_started()) {
             if (_adc != NULL) {
@@ -468,7 +529,12 @@ private:
                     }
                     NVIC_DisableIRQ(irq);
                     NVIC_ClearPendingIRQ(irq);
-                    NVIC_SetPriority(irq, 1);
+                    if (_adc == ADC0) {
+                        priority = SAMC21_ADC0_IRQ_PRIORITY;
+                    } else {
+                        priority = SAMC21_ADC1_IRQ_PRIORITY;
+                    }
+                    NVIC_SetPriority(irq, priority);
                     NVIC_EnableIRQ(irq);
                     _sync_wait();
                     _adc->INTENSET.reg = ADC_INTENSET_RESRDY;
@@ -535,12 +601,8 @@ private:
         if (_started()) {
             if (_adc != NULL) {  // Check to see if there is something newer.
                 if (_adc->INTFLAG.bit.RESRDY) {
-                    _val = _adc->RESULT.reg;
-                    _count++;
+                    addNew(_adc->RESULT.reg, (uint8_t)_adc->SEQSTATUS.bit.SEQSTATE);
                     _adc->INTFLAG.bit.RESRDY = 1;   // Clear the flag
-                    if (_callback != NULL) {
-                        _callback(this, _val, (uint8_t)_adc->SEQSTATUS.bit.SEQSTATE, _callback_ptr);
-                    }
                     return true;
                 }
             }
