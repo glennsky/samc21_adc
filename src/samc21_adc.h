@@ -217,8 +217,10 @@ public:
     {
         if (on) {
             _adc->CTRLC.bit.DIFFMODE = 1;
+            _sync_wait();
         } else {
             _adc->CTRLC.bit.DIFFMODE = 0;
+            _sync_wait();
         }
     }
     /**
@@ -398,8 +400,10 @@ public:
     {
         if (value) {
             _adc->CTRLC.bit.CORREN = 1;
+            _sync_wait();
         } else {
             _adc->CTRLC.bit.CORREN = 0;
+            _sync_wait();
         }
         return digitalCorrection();
     }
@@ -423,6 +427,7 @@ public:
     uint16_t offset(uint16_t value)
     {
         _adc->OFFSETCORR.reg = (value & ADC_OFFSETCORR_OFFSETCORR_Msk) << ADC_OFFSETCORR_OFFSETCORR_Pos;
+        _sync_wait();
         return offset();
     }
     /**
@@ -448,6 +453,7 @@ public:
     uint16_t gain(uint16_t value)
     {
         _adc->GAINCORR.reg = (value & ADC_GAINCORR_GAINCORR_Msk) << ADC_GAINCORR_GAINCORR_Pos;
+        _sync_wait();
         return gain();
     }
     /**
