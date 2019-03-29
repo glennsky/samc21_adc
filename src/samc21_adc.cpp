@@ -60,7 +60,7 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref, uint8_t clock_prescaler)
         _adc->CTRLB.reg = (clock_prescaler & ADC_CTRLB_PRESCALER_Msk);
         _adc->CTRLC.reg = ADC_CTRLC_RESSEL_12BIT | ADC_CTRLC_R2R;
         _sync_wait();
-        sampleTime(0);
+        samplingTime(0);
         gain(DEFAULT_GAIN);
         offset(DEFAULT_OFFSET);
         ref(vref);

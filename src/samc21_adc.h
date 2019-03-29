@@ -230,12 +230,16 @@ public:
     *
     * @return void
     */
-    void sampleTime(uint8_t val)
+    void samplingTime(uint8_t val)
     {
         if (val == 0) {
             _adc->SAMPCTRL.reg =  ADC_SAMPCTRL_OFFCOMP;
+            _sync_wait();
+            _adc->CTRLC.bit.R2R = 1;
         } else {
             _adc->SAMPCTRL.reg = ADC_SAMPCTRL_SAMPLEN(val);
+            _sync_wait();
+            _adc->CTRLC.bit.R2R = 0;
         }
         _sync_wait();
     }
