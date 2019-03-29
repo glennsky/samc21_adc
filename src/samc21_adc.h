@@ -224,6 +224,23 @@ public:
         }
     }
     /**
+    * @brief Sets the sampling time length
+    *
+    * @param val If zero enables Offset Compensation,  otherwise sets the value
+    *
+    * @return void
+    */
+    void sampleTime(uint8_t val)
+    {
+        if (val == 0) {
+            _adc->SAMPCTRL.reg =  ADC_SAMPCTRL_OFFCOMP;
+        } else {
+            _adc->SAMPCTRL.reg = ADC_SAMPCTRL_SAMPLEN(val);
+        }
+        _sync_wait();
+    }
+
+    /**
     * @brief Returns the diff mode
     *
     * @return True if diffmode is on.
