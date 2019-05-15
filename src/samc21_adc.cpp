@@ -73,6 +73,16 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref, uint8_t clock_prescaler)
     }
     return 0;
 };
+SAMC21_ADC::~SAMC21_ADC(void)
+{
+    if (_adc == ADC0) {
+        samc21_adc_obj[0] = NULL;
+    } else if (_adc == ADC1) {
+        samc21_adc_obj[1] = NULL;
+    } else {
+        samc21_adc_obj[2] = NULL;
+    }
+}
 
 uint8_t SAMC21_ADC::end(void)
 {

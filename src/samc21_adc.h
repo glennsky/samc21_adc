@@ -127,6 +127,14 @@ public:
     */
     SAMC21_ADC(Adc *Conv);
     /**
+    * @brief Destroys the ADC object.
+    *
+    * @param *Conv The ADC pointer to use.  Should be ADC0 or ADC1.
+    *
+    * @return void
+    */
+    ~SAMC21_ADC(void);
+    /**
     * @brief Sets up the ADC
     *
     * @param vref The voltage reference to use
