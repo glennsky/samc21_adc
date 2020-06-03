@@ -54,7 +54,7 @@ uint8_t SAMC21_ADC::begin(samc21_adc_ref vref, uint8_t clock_prescaler)
             samc21_adc_obj[1] = this;
         }
         _sync_wait();
-        _adc->CTRLA.bit.SWRST;
+        _adc->CTRLA.bit.SWRST = true;
         _sync_wait();
         _adc->CALIB.reg = ADC_CALIB_BIASREFBUF(biasrefbuf) | ADC_CALIB_BIASCOMP(biascomp);
         _adc->CTRLB.reg = (clock_prescaler & ADC_CTRLB_PRESCALER_Msk);
