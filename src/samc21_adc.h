@@ -13,6 +13,10 @@
 
 #include <inttypes.h>
 #include <string.h>
+#undef min
+#undef max
+#include <functional>
+ 
 
 #define REF_OFFSET 8
 #define SAMC21_ADC_MAX 4095
@@ -33,7 +37,11 @@
 
 class SAMC21_ADC;
 
-typedef void (*samc21_adc_callback)(SAMC21_ADC *, int32_t, uint8_t, void *);
+ #define REF_OFFSET 8
+ #define SAMC21_ADC_MAX 4095
+
+//typedef void (*samc21_adc_callback)(SAMC21_ADC *, int32_t, uint8_t, void *);
+typedef std::function<void(SAMC21_ADC *, int32_t, uint8_t, void *)> samc21_adc_callback;
 
 extern void *samc21_adc0_callback_ptr;
 extern samc21_adc_callback samc21_adc0_callback;
