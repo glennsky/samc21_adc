@@ -731,6 +731,32 @@ private:
         }
     }
 
+    /**
+     * Sets the pinmux
+     * 
+     * @param pin The pin to set
+     * @param group The group to set
+     * 
+     * @return void
+     */
+    void _pinmux(uint8_t pin, uint8_t group)
+    {
+        Serial.print("   G: ");
+        Serial.print(group);
+        Serial.print("   P: ");
+        Serial.print(pin);
+        Serial.println("");
+        PORT->Group[group].DIRCLR.reg = 1 << pin;
+        PORT->Group[group].PINCFG[pin].reg = PORT_PINCFG_INEN | PORT_PINCFG_PMUXEN;
+        if ((pin & 1) == 0) {
+            // Even pin
+            PORT->Group[group].PMUX[pin / 2].bit.PMUXE = 1; // B
+        } else {
+            // Odd pin
+            PORT->Group[group].PMUX[pin / 2].bit.PMUXO = 1; // B
+        }
+    }
+
 
 };
 

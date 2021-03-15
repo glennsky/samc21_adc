@@ -158,7 +158,6 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
     if (_adc != NULL) {
         uint8_t pgroup = 0xFF, ngroup = 0xFF;
         uint8_t ppin = 0xFF, npin = 0xFF;
-        uint8_t mux;
         if (_adc == ADC0) {
             if (pos < sizeof(ADC0_pins)) {
                 ppin   = ADC0_pins[pos];
@@ -185,30 +184,10 @@ bool SAMC21_ADC::pins(samc21_adc_mux_pos pos, samc21_adc_mux_neg neg)
             }
         }
         if (ppin != 0xFF) {
-            PORT->Group[pgroup].DIRCLR.reg = 1 << ppin;
-            PORT->Group[pgroup].PINCFG[ppin].reg = PORT_PINCFG_INEN | PORT_PINCFG_PMUXEN;
-            mux = PORT->Group[pgroup].PMUX[ppin / 2].reg;
-            if ((ppin & 1) == 0) {
-                // Even pin
-                mux = (mux & ~PORT_PMUX_PMUXE_Msk) | PORT_PMUX_PMUXE(1); // B
-            } else {
-                // Odd pin
-                mux = (mux & ~PORT_PMUX_PMUXO_Msk) | PORT_PMUX_PMUXO(1); // B
-            }
-            PORT->Group[pgroup].PMUX[ppin / 2].reg = mux;
+            _pinmux(ppin, pgroup);
         }
         if (npin != 0xFF) {
-            PORT->Group[ngroup].DIRCLR.reg = 1 << npin;
-            PORT->Group[ngroup].PINCFG[npin].reg = PORT_PINCFG_INEN | PORT_PINCFG_PMUXEN;
-            mux = PORT->Group[ngroup].PMUX[npin / 2].reg;
-            if ((ppin & 1) == 0) {
-                // Even pin
-                mux = (mux & ~PORT_PMUX_PMUXE_Msk) | PORT_PMUX_PMUXE(1); // B
-            } else {
-                // Odd pin
-                mux = (mux & ~PORT_PMUX_PMUXO_Msk) | PORT_PMUX_PMUXO(1); // B
-            }
-            PORT->Group[ngroup].PMUX[npin / 2].reg = mux;
+            _pinmux(npin, ngroup);
         }
         return true;
     }
