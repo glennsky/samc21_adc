@@ -523,14 +523,14 @@ public:
     }
 
 private:
-    Adc *_adc;                     //!< ADC Pointer
-    volatile uint32_t _count;      //!< Flag to say we have a new reading
-    volatile int32_t _val;         //!< The value of the last ADC read
-    samc21_adc_callback _window;   //!< The callback function for the windowing
-    uint32_t _new;                 //!< This is a container for the new function
-    bool _int;                     //!< 1 if we are in interrupt mode
-    void *_window_ptr;             //!< Extra pointer for _window
-    bool _begun;
+    Adc *_adc = NULL;                     //!< ADC Pointer
+    volatile uint32_t _count = 0;         //!< Flag to say we have a new reading
+    volatile int32_t _val = 0;            //!< The value of the last ADC read
+    samc21_adc_callback _window = NULL;   //!< The callback function for the windowing
+    uint32_t _new = 0;                    //!< This is a container for the new function
+    bool _int = 0;                        //!< 1 if we are in interrupt mode
+    void *_window_ptr = NULL;             //!< Extra pointer for _window
+    bool _begun = false;
 
     /**
     * This checks the clock sync
@@ -749,11 +749,6 @@ private:
      */
     void _pinmux(uint8_t pin, uint8_t group)
     {
-        Serial.print("   G: ");
-        Serial.print(group);
-        Serial.print("   P: ");
-        Serial.print(pin);
-        Serial.println("");
         PORT->Group[group].DIRCLR.reg = 1 << pin;
         PORT->Group[group].PINCFG[pin].reg = PORT_PINCFG_INEN | PORT_PINCFG_PMUXEN;
         if ((pin & 1) == 0) {
@@ -763,6 +758,20 @@ private:
             // Odd pin
             PORT->Group[group].PMUX[pin / 2].bit.PMUXO = 1; // B
         }
+    }
+
+    /**
+     * Copying not allowed
+     */
+    SAMC21_ADC(const SAMC21_ADC &other)
+    {
+    }
+    /**
+     * Copying not allowed
+     */
+    SAMC21_ADC &operator=(const SAMC21_ADC &other)
+    {
+        return *this;
     }
 
 
